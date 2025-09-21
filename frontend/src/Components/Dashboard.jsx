@@ -10,14 +10,13 @@ import ActivityHeatmap from "./DashBoard/ActivityHeatMap";
 import NotesCard from "./DashBoard/NotesCard";
 import GithubRepoCard from "./DashBoard/GithubRepoCard";
 import { useNavigate } from "react-router-dom";
-import { logInfo, logDebug, formatGitHubData } from "../lib/debug";
+import { logInfo, logDebug } from "../lib/debug";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [goals, setGoals] = useState([]); // stateful goals
-  const [syncingGithub, setSyncingGithub] = useState(false);
   const navigate= useNavigate();
   
   useEffect(() => {
@@ -54,31 +53,11 @@ export default function Dashboard() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.errors?.[0]?.msg || "Failed to load profile");
         
-        // Process GitHub activity data if present
-        if (data.activity && Array.isArray(data.activity)) {
-          // Format activity data for the heatmap
-          data.activity = data.activity.map(activity => {
-            const formattedActivity = { ...activity };
-            
-            // Ensure day property exists
-            if (!formattedActivity.day && formattedActivity.date) {
-              formattedActivity.day = formattedActivity.date;
-            } else if (!formattedActivity.day && formattedActivity.created_at) {
-              formattedActivity.day = new Date(formattedActivity.created_at).toISOString().split('T')[0];
-            }
-            
-            // Ensure value property exists
-            if (!formattedActivity.value) {
-              formattedActivity.value = 1;
-            }
-            
-            return formattedActivity;
-          });
-          
-          // Log activity data
-          logInfo("Loaded profile with GitHub activity data", formatGitHubData(data.activity));
-        } else {
-          logInfo("No GitHub activity data in profile");
+        // Log profile data
+        logInfo("Loaded profile data");
+        
+        // Use DevSync activity data or initialize empty array
+        if (!data.activity || !Array.isArray(data.activity)) {
           data.activity = [];
         }
 

@@ -7,7 +7,7 @@ export default function ActivityHeatmap({ activityData = [], className = "" }) {
     console.log("ActivityHeatmap received data:", activityData);
   }, [activityData]);
   
-  // Transform GitHub activity data for the heatmap
+  // Transform DevSync activity data for the heatmap
   const formattedActivityData = useMemo(() => {
     // Current year
     const currentYear = new Date().getFullYear();
@@ -20,9 +20,9 @@ export default function ActivityHeatmap({ activityData = [], className = "" }) {
     
     console.log(`Limiting heatmap to show activity from ${cutoffDateStr} onwards`);
     
-    // If no activity data, create some sample data
+    // If no activity data, create some sample DevSync data
     if (!activityData || !Array.isArray(activityData) || activityData.length === 0) {
-      console.log("No activity data to display, creating sample data");
+      console.log("No activity data to display, creating sample DevSync data");
       
       // Generate sample data - very sparse
       const sampleData = [];
@@ -43,14 +43,14 @@ export default function ActivityHeatmap({ activityData = [], className = "" }) {
         }
       }
       
-      console.log("Created sample activity data:", sampleData.length, "entries");
+      console.log("Created sample DevSync activity data:", sampleData.length, "entries");
       return sampleData;
     }
     
     // Group by date and count events - limit to the cutoff date
     const activityByDate = {};
     
-    // Process GitHub activity data - handle multiple possible formats
+    // Process DevSync activity data - handle multiple possible formats
     activityData.forEach(activity => {
       if (!activity) return; // Skip null/undefined items
       
@@ -61,8 +61,8 @@ export default function ActivityHeatmap({ activityData = [], className = "" }) {
         date = activity.day;
       } else if (activity.date) {
         date = activity.date;
-      } else if (activity.created_at) {
-        date = new Date(activity.created_at).toISOString().split('T')[0];
+      } else if (activity.timestamp) {
+        date = new Date(activity.timestamp).toISOString().split('T')[0];
       }
       
       // Only include activity from after the cutoff date
