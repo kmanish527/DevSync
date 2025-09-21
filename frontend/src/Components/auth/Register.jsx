@@ -126,8 +126,9 @@ const Register = () => {
 
   const handleGithubRegister = () => {
     // Try the /auth/github path instead as this matches GitHub's configured callback
-    console.log(`Redirecting to: ${import.meta.env.VITE_API_URL}/auth/github`);
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+    // Add from=register parameter to indicate we're coming from the registration page
+    console.log(`Redirecting to: ${import.meta.env.VITE_API_URL}/auth/github?from=register`);
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github?from=register`;
   };
 
   if (showVerification) {

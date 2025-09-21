@@ -35,9 +35,11 @@ app.use(
     session({
         secret: process.env.SESSION_SECRET || "devsync_session_secret",
         resave: false,
-        saveUninitialized: false,
+        saveUninitialized: true, // Changed to true to maintain session for unauthenticated users
         cookie: { 
             secure: false, // set true if using HTTPS
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            httpOnly: true,
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         }
@@ -57,8 +59,12 @@ app.use("/api/auth", authMiddleware, require("./routes/auth"));
 // Special mount for GitHub OAuth to match GitHub app configuration
 app.use("/auth", authMiddleware, require("./routes/auth"));
 
+// Profile route - now supports non-MongoDB users
+app.use("/api/profile", generalMiddleware, require("./routes/profile"));
+
+// GitHub integration routes
+app.use("/api/github", generalMiddleware, require("./routes/github"));
 // Comment out routes that depend on MongoDB
-// app.use("/api/profile", generalMiddleware, require("./routes/profile"));
 // app.use("/api/contact", generalMiddleware, contactRouter);
 
 

@@ -78,9 +78,15 @@ const Login = () => {
   };
 
   const handleGithubLogin = () => {
+    // Clear any existing tokens to avoid conflicts with session-based auth
+    localStorage.removeItem('token');
+    
     // Try the /auth/github path instead as this matches GitHub's configured callback
-    console.log(`Redirecting to: ${import.meta.env.VITE_API_URL}/auth/github`);
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github`;
+    console.log(`Redirecting to: ${import.meta.env.VITE_API_URL}/auth/github?from=login`);
+    
+    // Use a timestamp to prevent caching issues
+    const timestamp = new Date().getTime();
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/github?from=login&t=${timestamp}`;
   };
 
   // Show verification component if user needs to verify email

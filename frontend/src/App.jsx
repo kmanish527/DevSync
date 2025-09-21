@@ -131,8 +131,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/pomodoro" element={<Pomodoro />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/pomodoro" element={<ProtectedRoute><Pomodoro /></ProtectedRoute>} />
         <Route path='/contributors' element={<AllContributors/>}/>
     </Routes>
     </TimerProvider>
