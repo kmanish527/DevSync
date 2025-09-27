@@ -91,142 +91,31 @@ export default function Dashboard() {
       className="col-span-1" 
       onSyncGithub={async () => {
         try {
-          setSyncingGithub(true);
-          console.log("Attempting to sync GitHub data...");
+          // Just display message that GitHub sync is temporarily disabled
+          alert('GitHub sync is temporarily disabled in the backend server.');
+          console.log('GitHub sync is disabled - backend route is commented out');
           
-          // Try to get GitHub token from session storage (from URL params)
-          const githubToken = sessionStorage.getItem("github_token");
-          
-          const headers = {
-            'Accept': 'application/json'
-          };
-          
-          // If we have a GitHub token from the URL, add it to the request
-          if (githubToken) {
-            headers['Authorization'] = `Bearer ${githubToken}`;
-            console.log("Using GitHub token from URL for sync request");
-            console.log("Token preview:", `${githubToken.substring(0, 5)}...`);
+          // Just refresh the profile without GitHub sync
+          const headers = {};
+          const token = localStorage.getItem("token");
+          if (token) {
+            headers["x-auth-token"] = token;
           }
           
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/github/sync`, {
-            credentials: 'include', // Important for session-based auth
-            headers: headers
+          const profileRes = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+            headers: headers,
+            credentials: 'include'
           });
           
-          // Parse the response
-          const data = await res.json();
-          
-          if (res.ok) {
-            console.log("GitHub sync successful:", data);
-            
-            // Handle the complete GitHub data package
-            if (data.user) {
-              console.log("Received GitHub data package:", data.user);
-              
-              // Extract data components
-              const { activity = [], profile = {}, repositories = [], streak = 0 } = data.user;
-              
-              // Format activity data for the UI (defensive)
-              const formattedActivity = Array.isArray(activity) ? activity.map(item => {
-                // Make a defensive copy and ensure required fields exist
-                const formattedItem = { ...item };
-                
-                // Ensure day property exists
-                if (!formattedItem.day && formattedItem.date) {
-                  formattedItem.day = formattedItem.date;
-                } else if (!formattedItem.day && formattedItem.created_at) {
-                  formattedItem.day = new Date(formattedItem.created_at).toISOString().split('T')[0];
-                }
-                
-                // Ensure value property exists for heatmap
-                if (!formattedItem.value) {
-                  formattedItem.value = 1;
-                }
-                
-                return formattedItem;
-              }) : [];
-              
-              // Log the formatted data for debugging
-              logInfo("GitHub sync successful - formatted activity data:", formatGitHubData(formattedActivity));
-              logDebug("GitHub profile data:", profile);
-              logDebug("GitHub repositories:", repositories);
-              
-              // Update the profile state with all GitHub data
-              setProfile(prev => {
-                // Convert data to the format expected by components
-                const formattedData = {
-                  ...prev,
-                  activity: Array.isArray(formattedActivity) ? formattedActivity.map(a => ({
-                    ...a,
-                    day: a.day || a.date,
-                    value: typeof a.value === 'number' ? a.value : 1
-                  })) : [],
-                  githubProfile: profile,
-                  repositories: repositories,
-                  streak: streak
-                };
-                
-                console.log("Setting profile with GitHub data:", formattedData);
-                return formattedData;
-              });              // Show more detailed data in the console for debugging
-              if (formattedActivity.length === 0) {
-                logInfo("Warning: No activity data returned from GitHub sync");
-                
-                // Create sample data for testing UI if no real data is available
-                const sampleActivity = [];
-                const today = new Date();
-                
-                for (let i = 0; i < 30; i++) {
-                  const date = new Date();
-                  date.setDate(today.getDate() - i);
-                  const dateStr = date.toISOString().split('T')[0];
-                  
-                  // Random activity value between 0-5 (with some days having no activity)
-                  const value = Math.floor(Math.random() * 6);
-                  
-                  if (value > 0) {  // Only add days with activity
-                    sampleActivity.push({
-                      date: dateStr,
-                      day: dateStr,
-                      value: value,
-                      type: "SampleActivity",
-                      details: "Sample activity for UI testing"
-                    });
-                  }
-                }
-                
-                // Update with sample data
-                setProfile(prev => ({
-                  ...prev,
-                  activity: sampleActivity,
-                  streak: 3 // Sample streak
-                }));
-                
-                logInfo("Added sample activity data for UI testing", sampleActivity.length);
-              }
-            } else {
-              console.error("No user data in the response");
-            }
-            
-            alert('GitHub data synchronized successfully!');
-          } else {
-            console.error("GitHub sync failed:", data);
-            
-            if (res.status === 401) {
-              // If unauthorized, try logging in again
-              alert("Your GitHub session has expired. Please log out and log in again.");
-            } else {
-              alert(`Failed to sync GitHub data: ${data.message || 'Please try again.'}`);
-            }
+          if (profileRes.ok) {
+            const updatedProfile = await profileRes.json();
+            setProfile(updatedProfile);
           }
         } catch (err) {
-          console.error('Error syncing GitHub data:', err);
-          alert('Error syncing GitHub data. Please try again.');
-        } finally {
-          setSyncingGithub(false);
+          console.error('Error:', err);
         }
       }}
-      syncingGithub={syncingGithub}
+      syncingGithub={false}
     />
     <PlatformLinks platforms={profile?.platforms || []} className="col-span-1" />
     <StreakCard streak={profile?.streak || 0} className="col-span-1" />

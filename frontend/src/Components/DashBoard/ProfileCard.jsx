@@ -2,7 +2,7 @@ import { User, RefreshCw, Github, Check } from "lucide-react";
 import React, { useEffect } from "react";
 import CardWrapper from "./CardWrapper";
 
-export default function ProfileCard({ user, onSyncGithub, syncingGithub }) {
+export default function ProfileCard({ user, onSyncGithub, syncingGithub = false }) {
   if (!user) return null; // don't render until user is loaded
   
   const githubPlatform = user.platforms?.find(p => p.name === 'GitHub');
@@ -57,7 +57,7 @@ export default function ProfileCard({ user, onSyncGithub, syncingGithub }) {
           {hasGithubPlatform && onSyncGithub && (
             <button
               onClick={onSyncGithub}
-              disabled={syncingGithub}
+              disabled={syncingGithub === true}
               className="mt-2 flex items-center gap-1 mx-auto py-1 px-3 rounded-md text-xs bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
             >
               <RefreshCw size={14} className={syncingGithub ? "animate-spin" : ""} />
