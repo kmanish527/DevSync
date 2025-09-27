@@ -23,10 +23,10 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173", // frontend URL for local dev
+    origin: ["http://localhost:5173", "http://localhost:5174"], // frontend URLs for local dev
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 }));
 
 
@@ -61,6 +61,9 @@ app.use("/auth", authMiddleware, require("./routes/auth"));
 
 // Profile route - now supports non-MongoDB users
 app.use("/api/profile", generalMiddleware, require("./routes/profile"));
+
+// Feedback routes
+app.use("/api/feedback", generalMiddleware, require("./routes/feedback"));
 
 // GitHub integration routes - temporarily removed data sync
 // app.use("/api/github", generalMiddleware, require("./routes/github"));
