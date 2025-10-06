@@ -5,6 +5,7 @@ on:
   schedule:
     # Every 10 minutes
     - cron: '*/5 * * * *'
+  workflow_dispatch: 
 
 jobs:
   ping:
@@ -12,5 +13,5 @@ jobs:
     steps:
       - name: Ping Render app
         run: |
-          curl -s https://devsync-hrj5.onrender.com > /dev/null
-          echo "Pinged Render app!"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://devsync-hrj5.onrender.com)
+          echo "Pinged Render app with status: $STATUS"
