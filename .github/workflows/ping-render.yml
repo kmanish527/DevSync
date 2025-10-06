@@ -1,0 +1,16 @@
+name: Ping Render App
+
+# Run periodically
+on:
+  schedule:
+    # Every 10 minutes
+    - cron: '*/5 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render app
+        run: |
+          curl -s https://devsync-hrj5.onrender.com > /dev/null
+          echo "Pinged Render app!"
