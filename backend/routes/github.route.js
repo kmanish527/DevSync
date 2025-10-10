@@ -1,7 +1,6 @@
 // routes/github.route.js
 const express = require("express");
-const fetch = (...args) =>
-import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const fetch = require("node-fetch");
 const router = express.Router();
 
 // Helper to run GitHub GraphQL queries
