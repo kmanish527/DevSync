@@ -1,17 +1,21 @@
 import React from "react";
-import { CheckSquare, Clock, Settings, Menu } from "lucide-react";
+import { CheckSquare, Clock, Settings, Menu, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/Components/ui/sheet";
 import { Button } from "@/Components/ui/button";
+import { useFeedback } from "@/context/FeedbackContext";
 
+// Define menu items without feedback (we'll handle it separately)
 const menuItems = [
   { icon: CheckSquare, label: "To do list", path: "/todo" },
   { icon: Clock, label: "Pomodoro", path: "/pomodoro" },
+  { icon: MessageSquare, label: "Feedback", path: "/feedback" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const { openFeedbackPopup } = useFeedback();
 
   return (
     <>
@@ -39,6 +43,16 @@ export default function Sidebar() {
                   {label}
                 </Button>
               ))}
+              
+              {/* Feedback Button */}
+              <Button
+                variant="ghost"
+                onClick={openFeedbackPopup}
+                className="flex items-center gap-3 w-full justify-start p-3 rounded-md text-lg font-medium hover:bg-[var(--secondary)] transition-colors shadow-sm"
+              >
+                <MessageSquare size={24} />
+                Feedback
+              </Button>
             </nav>
           </SheetContent>
         </Sheet>
@@ -58,6 +72,16 @@ export default function Sidebar() {
               {label}
             </Button>
           ))}
+          
+          {/* Feedback Button */}
+          <Button
+            variant="ghost"
+            onClick={openFeedbackPopup}
+            className="flex items-center gap-3 w-full justify-start p-3 rounded-md text-lg font-medium text-[var(--sidebar-foreground)] hover:text-[var(--primary)] hover:bg-[var(--secondary)] transition-colors shadow-sm"
+          >
+            <MessageSquare size={24} />
+            Feedback
+          </Button>
         </nav>
       </aside>
     </>
