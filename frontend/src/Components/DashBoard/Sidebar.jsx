@@ -5,11 +5,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/Components/ui/sheet";
 import { Button } from "@/Components/ui/button";
 import { useFeedback } from "@/context/FeedbackContext";
 
-// Define menu items without feedback (we'll handle it separately)
+// Define menu items
 const menuItems = [
   { icon: CheckSquare, label: "To do list", path: "/todo" },
   { icon: Clock, label: "Pomodoro", path: "/pomodoro" },
-  { icon: MessageSquare, label: "Feedback", path: "/feedback" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
