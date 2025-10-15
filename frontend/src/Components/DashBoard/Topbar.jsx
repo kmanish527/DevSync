@@ -19,13 +19,6 @@ export default function Topbar() {
     { icon: Flame, label: "Streak", path: "/streak" },
   ];
 
-  const handleLogout = () => {
-    try {
-      localStorage.removeItem("token");
-    } catch {}
-    navigate("/login");
-  };
-
   return (
     <header className="flex items-center justify-between bg-[var(--card)] px-3 sm:px-6 py-3 shadow-md sticky top-0 z-50">
       {/* Logo */}
@@ -69,7 +62,7 @@ export default function Topbar() {
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={() => navigate("/logout")}>
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
