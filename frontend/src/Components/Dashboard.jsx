@@ -8,137 +8,217 @@ import GoalsCard from "./DashBoard/GoalsCard";
 import TimeSpentCard from "./DashBoard/TimeSpentCard";
 import ActivityHeatmap from "./DashBoard/ActivityHeatMap";
 import NotesCard from "./DashBoard/NotesCard";
-import GithubRepoCard from "./DashBoard/GithubRepoCard";
 import { useNavigate } from "react-router-dom";
-import { logInfo, logDebug } from "../lib/debug";
+import { Card } from "@/Components/ui/Card";
+import { ScrollArea } from "@/Components/ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [goals, setGoals] = useState([]); // stateful goals
-  const navigate= useNavigate();
-  
-  useEffect(() => {
-    // Check if there's a token in the URL params (from GitHub auth)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
-    
-    if (urlToken) {
-      console.log("Found token in URL parameters");
-      // Store the token temporarily for GitHub API calls
-      sessionStorage.setItem("github_token", urlToken);
-      
-      // Clean up the URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+  const [goals, setGoals] = useState([]);
+  const navigate = useNavigate();
+
+  const token = localStorage.getItem("token");
+
+  const fetchProfile = async () => {
+    if (!token) {
+      navigate("/login");
+      setLoading(false);
+      return;
     }
-    
-    const fetchProfile = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+        headers: { "x-auth-token": token },
+      });
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.errors?.[0]?.msg || "Failed to load profile");
+
+      setProfile(data);
+      setGoals(data.goals || []);
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get("token");
+    if (oauthToken) {
       try {
-        // First check for token-based auth
-        const token = localStorage.getItem("token");
-        
-        // Create headers based on authentication method
-        const headers = {};
-        if (token) {
-          headers["x-auth-token"] = token;
+        localStorage.setItem("token", oauthToken);
+      } catch (e) {
+        console.error("Failed to persist OAuth token:", e);
+      }
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    const fetchAndUpdateProfile = async () => {
+      await fetchProfile();
+
+      // After profile is loaded, add today to activity if not present
+      if (profile) {
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        if (!profile.activity.includes(today)) {
+          handleActivityAdd(today);
         }
-
-        // For session auth, we need to include credentials
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
-          headers: headers,
-          credentials: 'include', // Important for session-based auth
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.errors?.[0]?.msg || "Failed to load profile");
-        
-        // Log profile data
-        logInfo("Loaded profile data");
-        
-        // Use DevSync activity data or initialize empty array
-        if (!data.activity || !Array.isArray(data.activity)) {
-          data.activity = [];
-        }
-
-        setProfile(data);
-        setGoals(data.goals || []);   // ✅ sync backend goals into state
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchProfile();
-  }, []);
+    fetchAndUpdateProfile();
+  }, [navigate]);
 
-  if (loading) return <p className="p-6">Loading...</p>;
-  if (error) return <p className="p-6 text-red-500">{error}</p>;
+  // --- Handlers for real-time updates ---
+  const handleGoalsChange = async (updatedGoals) => {
+    setGoals(updatedGoals);
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/profile/goals`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-auth-token": token },
+        body: JSON.stringify({ goals: updatedGoals }),
+      });
+    } catch (err) {
+      console.error("Error updating goals:", err);
+    }
+  };
+
+  const handleNotesChange = async (updatedNotes) => {
+    setProfile((prev) => ({ ...prev, notes: updatedNotes }));
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/profile/notes`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-auth-token": token },
+        body: JSON.stringify({ notes: updatedNotes }),
+      });
+    } catch (err) {
+      console.error("Error updating notes:", err);
+    }
+  };
+
+  const handleActivityAdd = async (date) => {
+    setProfile((prev) => ({ ...prev, activity: [...prev.activity, date] }));
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/profile/activity`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-auth-token": token },
+        body: JSON.stringify({ date }),
+      });
+    } catch (err) {
+      console.error("Error updating activity:", err);
+    }
+  };
+
+  const handleTimeUpdate = async (newTime) => {
+    setProfile((prev) => ({ ...prev, timeSpent: newTime }));
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/profile/time`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-auth-token": token },
+        body: JSON.stringify({ timeSpent: newTime }),
+      });
+    } catch (err) {
+      console.error("Error updating time spent:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background p-6">
+        <Alert variant="destructive" className="max-w-md w-full shadow-lg">
+          <AlertTitle>Failed to Load Dashboard</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-shadow shadow-md"
+          >
+            Try Again
+          </button>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background p-6">
+        <Card className="p-6 text-center shadow-lg border border-border">
+          <p>No profile data available. Please try logging in again.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const {
+    socialLinks = {},
+    streak = 0,
+    timeSpent = "0 minutes",
+    activity = [],
+    notes = [],
+  } = profile;
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       <Topbar />
-
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-<main className="flex-1 p-6 bg-[#d1e4f3]">
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        <ScrollArea className="flex-1 h-full p-4 sm:p-6 bg-muted/30">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 auto-rows-max">
+            {/* Row 1 */}
+            <ProfileCard user={profile} className="col-span-1" />
+            <PlatformLinks platforms={socialLinks} className="col-span-1" />
+            <StreakCard streak={streak} className="col-span-1" />
 
-    {/* Row 1 */}
-    <ProfileCard 
-      user={profile} 
-      className="col-span-1" 
-      onSyncGithub={async () => {
-        try {
-          // Just display message that GitHub sync is temporarily disabled
-          alert('GitHub sync is temporarily disabled in the backend server.');
-          console.log('GitHub sync is disabled - backend route is commented out');
-          
-          // Just refresh the profile without GitHub sync
-          const headers = {};
-          const token = localStorage.getItem("token");
-          if (token) {
-            headers["x-auth-token"] = token;
-          }
-          
-          const profileRes = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
-            headers: headers,
-            credentials: 'include'
-          });
-          
-          if (profileRes.ok) {
-            const updatedProfile = await profileRes.json();
-            setProfile(updatedProfile);
-          }
-        } catch (err) {
-          console.error('Error:', err);
-        }
-      }}
-      syncingGithub={false}
-    />
-    <PlatformLinks platforms={profile?.platforms || []} className="col-span-1" />
-    <StreakCard streak={profile?.streak || 0} className="col-span-1" />
+            {/* Row 2 */}
+            <GoalsCard goals={goals} onGoalsChange={handleGoalsChange} />
+            <TimeSpentCard time={timeSpent} onTimeUpdate={handleTimeUpdate} />
+            <NotesCard notes={notes} onNotesChange={handleNotesChange} />
 
-    {/* Row 2: Goals, Time Spent, Notes */}
-    <GoalsCard goals={goals} onGoalsChange={setGoals} />
-    <TimeSpentCard time={profile?.timeSpent || "0 minutes"} />
-    {/* Add NotesCard here */}
-    <NotesCard notes={profile?.notes || []} onNotesChange={(n) => setProfile({ ...profile, notes: n })} />
-
-    {/* Row 3: GitHub repositories */}
-    <div className="col-span-1 sm:col-span-2 lg:col-span-3">
-      <ActivityHeatmap activityData={profile?.activity || []} />
-    </div>
-    
-    {/* Row 4: GitHub repositories - only show if we have repository data */}
-    {profile?.repositories && profile.repositories.length > 0 && (
-      <div className="col-span-1 sm:col-span-2 lg:col-span-3">
-        <GithubRepoCard repositories={profile.repositories || []} />
-      </div>
-    )}
-  </div>
-</main>
+            {/* Row 3: Heatmap full width */}
+            <div className="col-span-full">
+              <ActivityHeatmap
+                activityData={activity}
+                onAddActivity={async (day) => {
+                  try {
+                    const token = localStorage.getItem("token");
+                    const res = await fetch(
+                      `${import.meta.env.VITE_API_URL}/api/profile/activity`,
+                      {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "x-auth-token": token,
+                        },
+                        body: JSON.stringify({ date: day }),
+                      }
+                    );
+                    if (res.ok) {
+                      setProfile((prev) => ({
+                        ...prev,
+                        activity: [...prev.activity, day],
+                      }));
+                    }
+                  } catch (err) {
+                    console.error("Failed to add activity:", err);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );

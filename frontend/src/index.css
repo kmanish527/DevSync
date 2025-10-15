@@ -8,6 +8,11 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+/* 👇 Added these font variables */
+  --font-body: "Poppins", sans-serif;
+  --font-heading: "Sora", sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -39,33 +44,69 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --animate-shiny-text: shiny-text 8s infinite;
+
+  @keyframes shiny-text {
+
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+
+  --animate-gradient: gradient 8s linear infinite;
+
+  @keyframes gradient {
+    to {
+      background-position: var(--bg-size, 300%) 0;
+    }
+  }
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.98 0.01 250); /* Very light blue */
-  --foreground: oklch(0.15 0.05 250); /* Dark blue */
-  --card: oklch(1 0 0); /* Pure white */
+  --background: oklch(0.98 0.01 250);
+  /* Very light blue */
+  --foreground: oklch(0.15 0.05 250);
+  /* Dark blue */
+  --card: oklch(1 0 0);
+  /* Pure white */
   --card-foreground: oklch(0.15 0.05 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.05 250);
-  --primary: oklch(0.55 0.15 250); /* Medium blue */
+  --primary: oklch(0.55 0.15 250);
+  /* Medium blue */
   --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.95 0.02 250); /* Light blue */
+  --secondary: oklch(0.95 0.02 250);
+  /* Light blue */
   --secondary-foreground: oklch(0.25 0.06 250);
   --muted: oklch(0.95 0.02 250);
   --muted-foreground: oklch(0.55 0.08 250);
-  --accent: oklch(0.85 0.12 70); /* Coral/orange accent - complements blue */
+  --accent: oklch(79.476% 0.08834 237.132);
+  /* Coral/orange accent - complements blue */
   --accent-foreground: oklch(0.98 0.01 250);
-  --destructive: oklch(0.7 0.2 25); /* Red-orange */
-  --border: oklch(0.9 0.03 250); /* Light blue border */
+  --destructive: oklch(0.7 0.2 25);
+  /* Red-orange */
+  --border: oklch(0.9 0.03 250);
+  /* Light blue border */
   --input: oklch(0.92 0.02 250);
   --ring: oklch(0.65 0.12 250);
-  --chart-1: oklch(0.55 0.15 250); /* Blue */
-  --chart-2: oklch(0.85 0.12 70);  /* Coral */
-  --chart-3: oklch(0.7 0.18 180);  /* Teal */
-  --chart-4: oklch(0.8 0.15 300);  /* Purple */
-  --chart-5: oklch(0.75 0.14 120); /* Green */
+  --chart-1: oklch(0.55 0.15 250);
+  /* Blue */
+  --chart-2: oklch(0.85 0.12 70);
+  /* Coral */
+  --chart-3: oklch(0.7 0.18 180);
+  /* Teal */
+  --chart-4: oklch(0.8 0.15 300);
+  /* Purple */
+  --chart-5: oklch(0.75 0.14 120);
+  /* Green */
   --sidebar: oklch(0.97 0.01 250);
   --sidebar-foreground: oklch(0.15 0.05 250);
   --sidebar-primary: oklch(0.55 0.15 250);
@@ -74,32 +115,54 @@
   --sidebar-accent-foreground: oklch(0.25 0.06 250);
   --sidebar-border: oklch(0.9 0.03 250);
   --sidebar-ring: oklch(0.65 0.12 250);
+  --heatmap-bg: #ebedf0;
+  --calendar-empty: var(--heatmap-bg);
+  /* fallback background for empty days */
+  --calendar-level-1: var(--chart-5);
+  /* lightest activity */
+  --calendar-level-2: var(--chart-3);
+  --calendar-level-3: var(--chart-2);
+  --calendar-level-4: var(--chart-1);
+  /* darkest activity */
+  --calendar-day-border: var(--background);
+  /* ensures contrast with card bg */
+  --calendar-month-border: var(--background);
 }
 
 .dark {
-  --background: oklch(0.12 0.04 250); /* Very dark blue */
+  --background: oklch(0.12 0.04 250);
+  /* Very dark blue */
   --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.18 0.05 250); /* Dark blue card */
+  --card: oklch(0.18 0.05 250);
+  /* Dark blue card */
   --card-foreground: oklch(0.95 0.01 250);
   --popover: oklch(0.18 0.05 250);
   --popover-foreground: oklch(0.95 0.01 250);
-  --primary: oklch(0.65 0.12 250); /* Bright blue */
+  --primary: oklch(0.65 0.12 250);
+  /* Bright blue */
   --primary-foreground: oklch(0.15 0.04 250);
-  --secondary: oklch(0.22 0.06 250); /* Medium-dark blue */
+  --secondary: oklch(0.22 0.06 250);
+  /* Medium-dark blue */
   --secondary-foreground: oklch(0.95 0.01 250);
   --muted: oklch(0.22 0.06 250);
   --muted-foreground: oklch(0.7 0.08 250);
-  --accent: oklch(0.75 0.14 70); /* Brighter coral for dark mode */
+  --accent: oklch(82.859% 0.0607 244.047);
+  /* Brighter coral for dark mode */
   --accent-foreground: oklch(0.15 0.04 250);
   --destructive: oklch(0.75 0.22 25);
   --border: oklch(0.25 0.05 250);
   --input: oklch(0.25 0.05 250);
   --ring: oklch(0.65 0.12 250);
-  --chart-1: oklch(0.65 0.12 250); /* Blue */
-  --chart-2: oklch(0.75 0.14 70);  /* Coral */
-  --chart-3: oklch(0.6 0.16 180);  /* Teal */
-  --chart-4: oklch(0.7 0.13 300);  /* Purple */
-  --chart-5: oklch(0.65 0.12 120); /* Green */
+  --chart-1: oklch(0.65 0.12 250);
+  /* Blue */
+  --chart-2: oklch(0.75 0.14 70);
+  /* Coral */
+  --chart-3: oklch(0.6 0.16 180);
+  /* Teal */
+  --chart-4: oklch(0.7 0.13 300);
+  /* Purple */
+  --chart-5: oklch(0.65 0.12 120);
+  /* Green */
   --sidebar: oklch(0.18 0.05 250);
   --sidebar-foreground: oklch(0.95 0.01 250);
   --sidebar-primary: oklch(0.65 0.12 250);
@@ -108,17 +171,32 @@
   --sidebar-accent-foreground: oklch(0.95 0.01 250);
   --sidebar-border: oklch(0.25 0.05 250);
   --sidebar-ring: oklch(0.65 0.12 250);
+  --heatmap-bg: #1f2937;
+  --calendar-empty: var(--heatmap-bg);
+  --calendar-level-1: var(--chart-5);
+  --calendar-level-2: var(--chart-3);
+  --calendar-level-3: var(--chart-2);
+  --calendar-level-4: var(--chart-1);
+  --calendar-day-border: var(--background);
+  --calendar-month-border: var(--background);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: var(--font-body);
   }
+
   body {
     @apply bg-background text-foreground;
+     font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
 }
 
-html{
+html {
   scroll-behavior: smooth;
-} 
+}

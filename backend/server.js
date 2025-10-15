@@ -1,82 +1,78 @@
 // Entry point of the backend server
 require("dotenv").config();
-// Removed MongoDB dependency
 const express = require("express");
-// Removed mongoose dependency
-const cors = require("cors");
 const path = require("path");
-// Commenting out routes that depend on MongoDB
-// const contactRouter = require("./routes/contact.route");
-const passport = require("passport"); // import actual passport
-require("./config/passport"); // just execute the strategy config
+const cors = require("cors");
 const session = require("express-session");
+require("./utils/leetcodeCron");
+const passport = require("passport");
+const githubRoute = require("./routes/github.route");
 
 
-// Importing Rate Limiter Middlewares
+// Database connection
+require("./db/connection");
 
-const { generalMiddleware, authMiddleware } = require("./middleware/rateLimit/index")
+// Passport config (optional Google OAuth)
+try {
+  require("./config/passport");
+} catch (err) {
+  console.warn("Google OAuth is not configured properly. Skipping Passport strategy.");
+}
 
+// Import routes
+const contactRouter = require("./routes/contact.route");
 
+// Rate limiter middleware placeholders
+const { generalMiddleware, authMiddleware } = require("./middleware/rateLimit/index");
 
-// Initialize express
+// Initialize Express
 const app = express();
 
+// JSON parsing
 app.use(express.json());
-app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"], // frontend URLs for local dev
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
-}));
 
-
-
+// Enable CORS
 app.use(
-    session({
-        secret: process.env.SESSION_SECRET || "devsync_session_secret",
-        resave: false,
-        saveUninitialized: true, // Changed to true to maintain session for unauthenticated users
-        cookie: { 
-            secure: false, // set true if using HTTPS
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-            httpOnly: true,
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
-        }
-    })
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  })
 );
 
+// Session setup
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "devsync_session_secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }, // set true if using HTTPS
+  })
+);
+
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Define routes
-
-// Mount auth routes at both /api/auth and /auth to support both paths
+// OAuth Routes (mounted at root to match Google's callback URL)
+app.use("/auth", require("./routes/auth"));
+app.use("/api/github", githubRoute);
+// API Routes
 app.use("/api/auth", authMiddleware, require("./routes/auth"));
-// Special mount for GitHub OAuth to match GitHub app configuration
-app.use("/auth", authMiddleware, require("./routes/auth"));
-
-// Profile route - now supports non-MongoDB users
 app.use("/api/profile", generalMiddleware, require("./routes/profile"));
-
-// Feedback routes
-app.use("/api/feedback", generalMiddleware, require("./routes/feedback"));
-
-// GitHub integration routes - temporarily removed data sync
-// app.use("/api/github", generalMiddleware, require("./routes/github"));
-// Comment out routes that depend on MongoDB
-// app.use("/api/contact", generalMiddleware, contactRouter);
+app.use("/api/contact", generalMiddleware, contactRouter);
+app.use("/api/tasks", require("./routes/tasks.route"));
 
 
-// Route to display the initial message on browser
+// Default route
 app.get("/", (req, res) => {
-    res.send("DEVSYNC BACKEND API");
+  res.send("DEVSYNC BACKEND API 🚀");
 });
 
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server is up and running at http://localhost:${PORT} 🚀`);
+  console.log(`Server is up and running at http://localhost:${PORT} 🚀`);
 });
