@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import FeedbackPopup from "./FeedbackPopup";
 import { useFeedback } from "../../context/FeedbackContext";
 
@@ -7,38 +7,45 @@ const FEEDBACK_STORAGE_KEY = "devSync_feedback_state";
 
 export default function FeedbackController({ user }) {
   const { showFeedbackPopup, openFeedbackPopup, closeFeedbackPopup } = useFeedback();
+  // Use a ref to track if we've already shown the popup in this session
+  const hasTriggeredPopup = useRef(false);
   
-  // Check if we should show feedback popup based on last shown date
+    // Check if we should show feedback popup based on last shown date
   useEffect(() => {
     // Only run this if user is logged in
-    if (!user) return;
-    
-    // Get a reliable user ID (could be different formats depending on auth method)
-    const userId = user.id || user.githubId || user._id || (typeof user === 'string' ? user : null);
-    
-    // Log the user format for debugging
-    console.log("FeedbackController received user:", { 
-      hasId: !!user.id,
-      hasGithubId: !!user.githubId,
-      has_id: !!user._id,
-      userId
-    });
-    
-    if (!userId) {
-      console.error("FeedbackController: Unable to determine user ID", user);
+    if (!user) {
       return;
     }
-
+    
+    // Get a reliable user ID from the user object structure
+    // Check common properties in the profile object for a usable ID
+    const userId = user.id || user.githubId || user._id || user.user || 
+                  (user.user && user.user._id) || 
+                  (typeof user === 'string' ? user : null);
+    
+    if (!userId) {
+      console.error("%c FeedbackController: Unable to determine user ID", "background: red; color: white; padding: 4px; font-weight: bold;", user);
+      return;
+    }
+    
+    // Use the determined user ID
+    const effectiveUserId = userId;
+    
     // Check local storage for feedback state
     const storedState = localStorage.getItem(FEEDBACK_STORAGE_KEY);
     const feedbackState = storedState ? JSON.parse(storedState) : null;
     
     const shouldShowFeedback = () => {
+      // For debugging, log what's in localStorage
       // If no previous feedback state, show the popup
-      if (!feedbackState) return true;
+      if (!feedbackState) {
+        return true;
+      }
       
       // If user ID has changed, show the popup
-      if (feedbackState.userId !== userId) return true;
+      if (feedbackState.userId !== effectiveUserId) {
+        return true;
+      }
       
       // Check if enough time has passed since last feedback
       const lastShownDate = new Date(feedbackState.lastShown);
@@ -49,15 +56,19 @@ export default function FeedbackController({ user }) {
         (currentDate - lastShownDate) / (1000 * 60 * 60 * 24)
       );
       
+      // Check if enough time has passed since the last feedback
       return daysSinceLastShown >= FEEDBACK_INTERVAL_DAYS;
     };
     
     // Show feedback popup if needed with a slight delay after login
-    if (shouldShowFeedback()) {
+    // Only trigger the popup if we haven't shown it already in this session
+    if (shouldShowFeedback() && !hasTriggeredPopup.current) {
+      hasTriggeredPopup.current = true; // Mark that we've triggered the popup
+      
       // Show feedback form after a short delay
       const timer = setTimeout(() => {
         openFeedbackPopup();
-      }, 5000); // 5 seconds delay
+      }, 3000); // 3 second delay
       
       return () => clearTimeout(timer);
     }
@@ -99,13 +110,16 @@ export default function FeedbackController({ user }) {
       closeFeedbackPopup();
       
       // Get the user ID (support multiple authentication methods)
-      const userId = user.id || user.githubId || user._id || (typeof user === 'string' ? user : null);
+      const submissionUserId = user.id || user.githubId || user._id || 
+                           user.user || (user.user && user.user._id) || 
+                           (typeof user === 'string' ? user : null) || 
+                           "test-user-id";
       
       // Update local storage with the new date
       localStorage.setItem(
         FEEDBACK_STORAGE_KEY,
         JSON.stringify({
-          userId: userId,
+          userId: submissionUserId,
           lastShown: new Date().toISOString(),
         })
       );
