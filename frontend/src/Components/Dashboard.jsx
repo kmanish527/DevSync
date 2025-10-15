@@ -184,18 +184,6 @@ export default function Dashboard() {
           {/* Add FeedbackController with the user profile */}
           <FeedbackController user={profile} />
           
-          {/* Manual Feedback Button */}
-          <div className="flex justify-end mb-4">
-            <Button 
-              onClick={openFeedbackPopup}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-              size="sm"
-            >
-              <MessageSquare size={16} />
-              Give Feedback
-            </Button>
-          </div>
-          
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 auto-rows-max">
             {/* Row 1 */}
             <ProfileCard user={profile} className="col-span-1" />

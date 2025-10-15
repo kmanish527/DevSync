@@ -23,7 +23,6 @@ const publicNavItems = [
   { name: "About us", link: "#about", icon: <Info className="h-4 w-4" /> },
   { name: "Github", link: "https://github.com/DevSyncx/DevSync.git", icon: <Github className="h-4 w-4" /> },
   { name: "Contact Us", link: "#contact", icon: <Phone className="h-4 w-4" /> },
-  { name: "View Feedback", link: "/feedback", icon: <MessageCircle className="h-4 w-4" /> },
   { name: "FAQ", link: "#faq", icon: <HelpCircle className="h-4 w-4" /> },
 ];
 

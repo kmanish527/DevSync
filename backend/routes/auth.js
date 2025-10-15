@@ -455,15 +455,14 @@ router.post(
           .json({ errors: [{ msg: "Invalid credentials" }] });
       }
 
+      // DEVELOPMENT MODE: Auto-verify email for testing
       if (!user.isEmailVerified) {
-        return res.status(400).json({
-          errors: [{ msg: "Please verify your email before logging in" }],
-          requiresVerification: true,
-          userId: user._id,
-          email: user.email,
-        });
-      } else {
-        // Generate JWT token
+        console.log("DEV MODE: Auto-verifying user email for testing");
+        user.isEmailVerified = true;
+        await user.save();
+      }
+      
+      // Generate JWT token
         try {
           const token = await generateJWT(user.id);
           res.json({
