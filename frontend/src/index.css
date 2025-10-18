@@ -282,3 +282,14 @@ html {
   cursor: pointer;
 }
 
+/* in your global.css or a styles file */
+.scrollbar-hidden {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
+
