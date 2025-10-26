@@ -168,7 +168,7 @@ export default function Todo() {
     <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm flex flex-col gap-2">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <button onClick={() => toggleComplete(task.id)} className="mt-1 p-1 rounded-full hover:bg-[var(--accent)] dark:hover:bg-gray-700/50" aria-label="toggle-complete">
+          <button onClick={() => toggleComplete(task._id || task.id)} className="mt-1 p-1 rounded-full hover:bg-[var(--accent)] dark:hover:bg-gray-700/50" aria-label="toggle-complete">
             {task.status === "completed" ? (
               <CheckCircle2 className="w-5 h-5 text-[var(--primary)] dark:text-blue-400" />
             ) : (
@@ -187,7 +187,7 @@ export default function Todo() {
           <button onClick={() => startEdit(task)} className="p-2 rounded-lg hover:bg-[var(--accent)] dark:hover:bg-gray-700/50" aria-label="edit">
             <Pencil className="w-4 h-4 text-[var(--primary)] dark:text-blue-400" />
           </button>
-          <button onClick={() => removeTask(task.id)} className="p-2 rounded-lg hover:bg-[var(--accent)] dark:hover:bg-gray-700/50" aria-label="delete">
+          <button onClick={() => removeTask(task._id || task.id)} className="p-2 rounded-lg hover:bg-[var(--accent)] dark:hover:bg-gray-700/50" aria-label="delete">
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
@@ -267,48 +267,66 @@ export default function Todo() {
           )}
 
           {/* Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 space-y-4">
-              {/* Pending */}
-              <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
-                <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100 mb-3">Pending</h3>
-                <div className="space-y-3">
-                  {filtered(pendingTasks).length === 0 ? (
-                    <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-400">No pending tasks.</p>
-                  ) : (
-                    filtered(pendingTasks).map(task => <TaskCard key={task.id} task={task} />)
-                  )}
-                </div>
-              </div>
-
-              {/* Completed */}
-              <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
-                <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100 mb-3">Completed</h3>
-                <div className="space-y-3">
-                  {filtered(completedTasks).length === 0 ? (
-                    <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-400">No completed tasks yet.</p>
-                  ) : (
-                    filtered(completedTasks).map(task => <TaskCard key={task.id} task={task} />)
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right column widgets */}
-            <div className="space-y-4">
-              {/* Move Quick Tips to top for visibility */}
-              <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
-                <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100">Quick Tips</h3>
-                <ul className="mt-2 list-disc list-inside text-sm text-[var(--muted-foreground)] dark:text-gray-400 space-y-1">
-                  <li>Use deadlines to prioritize tasks.</li>
-                  <li>Break big goals into smaller, actionable items.</li>
-                  <li>Mark tasks done to track your streaks.</li>
-                </ul>
-              </div>
-              <GoalProgress />
-              <WeeklyGoals />
-            </div>
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="lg:col-span-2 space-y-4">
+      
+      {/* --- Pending Tasks Section --- */}
+      {/* Only show this section if filter is 'all' OR 'upcoming' */}
+      {(filter === 'all' || filter === 'upcoming') && (
+        <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
+          <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100 mb-3">
+            Pending
+          </h3>
+          <div className="space-y-3">
+            {/* Inner check: Show tasks or "No tasks" message */}
+            {filtered(pendingTasks).length === 0 ? (
+              <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-400">
+                No pending tasks yet.
+              </p>
+            ) : (
+              filtered(pendingTasks).map(task => <TaskCard key={task._id || task.id} task={task} />)
+            )}
           </div>
+        </div>
+      )}
+
+      {/* --- Completed Tasks Section --- */}
+      {/* Only show this section if filter is 'all' OR 'completed' */}
+      {(filter === 'all' || filter === 'completed') && (
+        <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
+          <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100 mb-3">
+            Completed
+          </h3>
+          <div className="space-y-3">
+            {/* Inner check: Show tasks or "No tasks" message */}
+            {filtered(completedTasks).length === 0 ? (
+              <p className="text-sm text-[var(--muted-foreground)] dark:text-gray-400">
+                No completed tasks yet.
+              </p>
+            ) : (
+              filtered(completedTasks).map(task => <TaskCard key={task._id || task.id} task={task} />)
+            )}
+          </div>
+        </div>
+      )}
+
+    </div>
+
+    {/* Right column widgets */}
+    <div className="space-y-4">
+      {/* Move Quick Tips to top for visibility */}
+      <div className="p-4 rounded-xl bg-[var(--card)] dark:bg-gray-800 border border-[var(--border)] dark:border-gray-700 shadow-sm">
+        <h3 className="text-lg font-semibold text-[var(--card-foreground)] dark:text-gray-100">Quick Tips</h3>
+        <ul className="mt-2 list-disc list-inside text-sm text-[var(--muted-foreground)] dark:text-gray-400 space-y-1">
+          <li>Use deadlines to prioritize tasks.</li>
+          <li>Break big goals into smaller, actionable items.</li>
+          <li>Mark tasks done to track your streaks.</li>
+        </ul>
+      </div>
+      <GoalProgress />
+      <WeeklyGoals />
+    </div>
+  </div>
         </div>
       </main>
     </div>
