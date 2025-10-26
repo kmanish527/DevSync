@@ -31,7 +31,7 @@ Enable Google login for the project and allow access to Google APIs securely.
    - Application type: **Web Application**
    ![OAuth Credentials](../../assets/screenshots/google-oauth-credentials1.png) 
    - Add **Redirect URIs**:  
-     - `http://localhost:5000/api/auth/callback` (for local dev)  
+     - `http://localhost:5000/auth/callback` (for local dev)  
      - `https://yourdomain.com/auth/callback` (for production)  
    - Click **Create** → Save your `Client ID` and `Client Secret`.
    ![OAuth Credentials](../../assets/screenshots/google-oauth-credentials.png)
