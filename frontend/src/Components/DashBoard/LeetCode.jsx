@@ -1,7 +1,7 @@
-"use client"
+"use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { SiLeetcode } from "react-icons/si";
-import { useEffect, useState,useRef } from "react";
+import React,{ useEffect, useState, useRef, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,20 +18,37 @@ import ReactCalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
 import BackButton from "../ui/backbutton";
 
-// 👇 Imported for new UI section
-/* ✅ Integrated Chart Component with Detailed Tooltip */
-import { TrendingUp } from "lucide-react"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { TrendingUp } from "lucide-react";
 import {
-  Card, CardContent, CardDescription,
-  CardFooter, CardHeader, CardTitle
-} from "@/Components/ui/Card"
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/Components/ui/Card";
 import {
   ChartContainer,
   ChartTooltip,
-} from "@/Components/ui/chart"
+} from "@/Components/ui/chart";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltipJS, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltipJS,
+  Legend
+);
 
 export default function LeetCode({ platforms = {} }) {
   const [stats, setStats] = useState(null);
@@ -41,10 +58,13 @@ export default function LeetCode({ platforms = {} }) {
     const fetchStats = async () => {
       if (!leetUser) return;
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/leetcode/${leetUser}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/profile/leetcode/${leetUser}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const json = await res.json();
         setStats(json.data);
@@ -68,77 +88,15 @@ export default function LeetCode({ platforms = {} }) {
     submissionCalendar,
   } = stats;
 
-  const calendarData = Object.entries(submissionCalendar).map(([timestamp, count]) => ({
-    date: new Date(Number(timestamp) * 1000).toISOString().split("T")[0],
-    count: parseInt(count, 10),
-  }));
-
-  const startDate = new Date("2025-01-01");
-  const endDate = new Date();
-
   const attendedContests = contestHistory.filter((c) => c.attended);
 
-  // ✅ Recharts data aligned with backend
   const rechartsData = attendedContests.map((c) => ({
     contestName: c.contest?.title || c.title || "Contest",
     date: c.contest?.startTime
       ? new Date(c.contest.startTime).toISOString().split("T")[0]
       : "Unknown",
-    rating: c.rating || 0,
+    rating: Math.round(c.rating || 0),
   }));
-
-  // Original chart.js data (kept intact)
-  const labels = attendedContests.map((c) =>
-    new Date(c.contest.startTime).toLocaleDateString()
-  );
-
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: "Contest Rating",
-        data: attendedContests.map((c) => c.rating),
-        borderColor: "#FFA116",
-        backgroundColor: "#FFA116",
-        fill: false,
-        tension: 0.3,
-        pointRadius: 3,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "top", labels: { color: "#FFA116", font: { size: 12 } } },
-      title: {
-        display: true,
-        text: "LeetCode Contest Rating Over Time",
-        color: "#FFA116",
-        font: { size: 14 },
-      },
-      tooltip: { mode: "index", intersect: false },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#FFA116",
-          maxRotation: 45,
-          minRotation: 45,
-          font: { size: 11 },
-          autoSkip: true,
-          maxTicksLimit: 10,
-        },
-        grid: { color: "#444" },
-      },
-      y: {
-        ticks: { color: "#FFA116", font: { size: 11 } },
-        grid: { color: "#444" },
-        beginAtZero: false,
-      },
-    },
-  };
 
   const difficultyColor = {
     Easy: "text-green-400",
@@ -150,6 +108,7 @@ export default function LeetCode({ platforms = {} }) {
     <>
       <BackButton />
       <div className="w-full min-h-screen p-10 bg-[var(--card)] rounded-lg shadow-lg border border-[var(--border)] space-y-6">
+        {/* Profile Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
@@ -171,7 +130,11 @@ export default function LeetCode({ platforms = {} }) {
                   {badges.map(({ id, icon, displayName }) => (
                     <img
                       key={id}
-                      src={icon && icon.startsWith("https://") ? icon : `https://leetcode.com${icon || ''}`}
+                      src={
+                        icon && icon.startsWith("https://")
+                          ? icon
+                          : `https://leetcode.com${icon || ""}`
+                      }
                       alt={displayName}
                       title={displayName}
                       className="w-6 h-6 rounded"
@@ -191,58 +154,55 @@ export default function LeetCode({ platforms = {} }) {
           </a>
         </div>
 
+        {/* Problems + Submissions */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">Problems Solved</h3>
+            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
+              Problems Solved
+            </h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               {stats.submitStatsGlobal?.map(({ difficulty, count }) => (
                 <div key={difficulty}>
                   <p className="text-sm capitalize text-muted-foreground">{difficulty}</p>
-                  <p className={`text-2xl font-bold ${difficultyColor[difficulty] || ""}`}>{count}</p>
+                  <p className={`text-2xl font-bold ${difficultyColor[difficulty] || ""}`}>
+                    {count}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm col-span-2">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">Recent Submissions</h3>
+            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
+              Recent Submissions
+            </h3>
             {recentSubmissions.length > 0 ? (
               <ul className="space-y-2 text-sm text-muted-foreground max-h-[130px] overflow-y-auto">
                 {recentSubmissions.slice(0, 3).map(({ id, title, timestamp }) => (
                   <li key={id} className="flex justify-between whitespace-nowrap">
                     <span className="truncate">{title}</span>
-                    <span className="ml-3 text-xs">{new Date(timestamp).toLocaleDateString()}</span>
+                    <span className="ml-3 text-xs">
+                      {new Date(timestamp).toLocaleDateString()}
+                    </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-muted-foreground">No recent activity found.</p>
+              <p className="text-xs text-muted-foreground">
+                No recent activity found.
+              </p>
             )}
           </div>
         </section>
 
+        {/* Heatmap + Contest Info */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">Submission Heatmap</h3>
-            <ReactCalendarHeatmap
-              startDate={startDate}
-              endDate={endDate}
-              values={calendarData}
-              showWeekdayLabels={false}
-              classForValue={(value) => {
-                if (!value) return "fill-inherit";
-                if (value.count >= 10) return "fill-green-500";
-                if (value.count >= 5) return "fill-green-400";
-                return "fill-green-300";
-              }}
-              tooltipDataAttrs={(value) => ({
-                "data-tip": value ? `Submissions: ${value.count}` : "No submissions",
-              })}
-            />
-          </div>
+          <EnhancedHeatmap submissionCalendar={submissionCalendar} />
 
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">Contest Stats</h3>
+            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
+              Contest Stats
+            </h3>
             {contestRating?.badge && (
               <div className="flex items-center gap-3 mb-3 text-muted-foreground flex-wrap">
                 {contestRating.badge.icon !== "/default_icon.png" && (
@@ -254,45 +214,202 @@ export default function LeetCode({ platforms = {} }) {
                   />
                 )}
                 <span>{contestRating.badge.name}</span>
-                {contestRating.badge.expired && <span className="text-red-400">(Expired)</span>}
+                {contestRating.badge.expired && (
+                  <span className="text-red-400">(Expired)</span>
+                )}
               </div>
             )}
 
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>Contests: {contestRating?.attendedContestsCount ?? "N/A"}</p>
-              <p>Rating: {contestRating?.rating ?? "N/A"}</p>
-              <p>Rank: {contestRating?.globalRanking ? `#${contestRating.globalRanking}` : "N/A"}</p>
+              <p>Rating: {Math.round(contestRating?.rating ?? 0)}</p>
+              <p>
+                Rank:{" "}
+                {contestRating?.globalRanking
+                  ? `#${contestRating.globalRanking}`
+                  : "N/A"}
+              </p>
               <p>
                 Top %:{" "}
-                {contestRating?.topPercentage ? `${contestRating.topPercentage.toFixed(2)}%` : "N/A"}
+                {contestRating?.topPercentage
+                  ? `${contestRating.topPercentage.toFixed(2)}%`
+                  : "N/A"}
               </p>
             </div>
           </div>
         </section>
 
-        {/* ✅ New Contest Rating History Section with upgraded UI */}
         <ContestRatingHistory attendedContests={attendedContests} data={rechartsData} />
       </div>
     </>
   );
 }
 
-// Custom tooltip — receives already-converted page coords in `position`
+/* ✅ EnhancedHeatmap Component (integrated inline) */
+function EnhancedHeatmap({ submissionCalendar }) {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, date: "", count: 0 });
+  const heatmapRef = useRef(null);
+
+  const startDate = new Date(`${selectedYear}-01-01`);
+  const endDate = new Date(`${selectedYear}-12-31`);
+
+  // ✅ Process calendar data year-wise
+  const calendarData = useMemo(() => {
+    if (!submissionCalendar) return [];
+    return Object.entries(submissionCalendar)
+      .map(([timestamp, count]) => {
+        const date = new Date(Number(timestamp) * 1000);
+        if (date.getFullYear() === selectedYear) {
+          return {
+            date: date.toISOString().split("T")[0],
+            count: parseInt(count, 10),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }, [submissionCalendar, selectedYear]);
+
+  const totalSubmissions = calendarData.reduce((sum, d) => sum + d.count, 0);
+
+  const availableYears = [
+    ...new Set(
+      Object.keys(submissionCalendar || {}).map(
+        (ts) => new Date(Number(ts) * 1000).getFullYear()
+      )
+    ),
+  ].sort((a, b) => b - a);
+
+  // ✅ Attach hover listeners directly to rects after rendering
+  useEffect(() => {
+    const container = heatmapRef.current;
+    if (!container) return;
+
+    const rects = container.querySelectorAll("rect[data-date]");
+    rects.forEach((rect) => {
+      rect.style.cursor = "pointer";
+      rect.addEventListener("mouseenter", (e) => {
+        const date = rect.getAttribute("data-date");
+        const count = rect.getAttribute("data-count") || 0;
+        const rectBox = rect.getBoundingClientRect();
+        const containerBox = container.getBoundingClientRect();
+
+        setTooltip({
+          visible: true,
+          x: rectBox.left - containerBox.left + rectBox.width / 2,
+          y: rectBox.top - containerBox.top,
+          date,
+          count,
+        });
+      });
+
+      rect.addEventListener("mouseleave", () => {
+        setTooltip((t) => ({ ...t, visible: false }));
+      });
+    });
+
+    return () => rects.forEach((r) => r.replaceWith(r.cloneNode(true)));
+  }, [calendarData]);
+
+  return (
+    <div className="relative bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm overflow-hidden">
+      <h3 className="text-lg font-semibold mb-4 text-[var(--primary)] flex justify-between items-center">
+        Submission Heatmap
+        {availableYears.length > 1 && (
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] text-sm rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y} className="bg-[var(--card)] text-[var(--foreground)]">
+                {y}
+              </option>
+            ))}
+          </select>
+        )}
+      </h3>
+
+      <p className="text-sm text-muted-foreground mb-3">
+        📈 Total Submissions in {selectedYear}:{" "}
+        <span className="font-semibold text-[var(--primary)]">{totalSubmissions}</span>
+      </p>
+
+      <div className="relative" ref={heatmapRef}>
+        <ReactCalendarHeatmap
+          startDate={startDate}
+          endDate={endDate}
+          values={calendarData}
+          showWeekdayLabels={false}
+          classForValue={(value) => {
+            if (!value) return "fill-[var(--bg)]";
+            if (value.count >= 30) return "fill-[#15803d]";
+            if (value.count >= 10) return "fill-[#16a34a]";
+            if (value.count >= 5) return "fill-[#22c55e]";
+            if (value.count >= 1) return "fill-[#4ade80]";
+            return "fill-[var(--bg)]";
+          }}
+          transformDayElement={(rect, value, index) =>
+            React.cloneElement(rect, {
+              "data-date": value?.date,
+              "data-count": value?.count ?? 0,
+            })
+          }
+        />
+
+        <AnimatePresence>
+          {tooltip.visible && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="absolute z-50 pointer-events-none bg-[var(--popover)] border border-[var(--border)] shadow-lg rounded-lg px-3 py-2 text-xs text-[var(--foreground)] backdrop-blur-sm"
+              style={{
+                left: tooltip.x,
+                top: tooltip.y,
+                transform: "translate(-50%, -110%)",
+              }}
+            >
+              <p className="font-semibold text-[var(--primary)]">{tooltip.date}</p>
+              <p className="text-[var(--muted-foreground)]">
+                {tooltip.count} submission{tooltip.count > 1 ? "s" : ""}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <style jsx global>{`
+        .react-calendar-heatmap rect {
+          cursor: pointer;
+          transition: all 0.25s ease;
+          rx: 3;
+          ry: 3;
+        }
+        .react-calendar-heatmap rect:hover {
+          stroke: var(--primary);
+          stroke-width: 2px;
+          filter: drop-shadow(0 0 8px var(--primary));
+          transform: scale(1.05);
+        }
+      `}</style>
+    </div>
+  );
+}
+/* ✅ ContestRatingHistory with fixed tooltip + integer Y-axis */
 function CustomContestTooltip({ contest, position, containerRect }) {
   if (!contest || !position) return null;
-
-  // clamp horizontally inside container
   const tooltipWidth = 260;
   const padding = 12;
-  let left = position.x - containerRect.left; // pos relative to container
+  let left = position.x - containerRect.left;
   if (left + tooltipWidth / 2 > containerRect.width - padding) {
     left = containerRect.width - padding - tooltipWidth / 2;
   } else if (left - tooltipWidth / 2 < padding) {
     left = tooltipWidth / 2 + padding;
   }
-
-  // compute top relative to container (place above the dot)
-  const top = position.y - containerRect.top - 14; // 14px above dot center
+  const top = position.y - containerRect.top - 14;
 
   return (
     <AnimatePresence>
@@ -318,8 +435,7 @@ function CustomContestTooltip({ contest, position, containerRect }) {
           <p>
             ⭐ Rating:{" "}
             <span className="font-bold text-[var(--chart-1)] text-lg">
-             {Math.round(contest.rating)}
-
+              {Math.round(contest.rating)}
             </span>
           </p>
         </div>
@@ -328,12 +444,10 @@ function CustomContestTooltip({ contest, position, containerRect }) {
   );
 }
 
-// ContestRatingHistory — replacement
 export function ContestRatingHistory({ attendedContests = [], data = [] }) {
   const [activeDot, setActiveDot] = useState(null);
   const containerRef = useRef(null);
 
-  // Close tooltip when clicking outside the chart area
   useEffect(() => {
     const onDocDown = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -344,22 +458,16 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
     return () => document.removeEventListener("mousedown", onDocDown);
   }, []);
 
-  // Helper: create absolute page coords from SVG cx/cy
   const makePagePos = (cx, cy) => {
     const container = containerRef.current;
     if (!container) return { x: cx, y: cy };
-    // The chart SVG is placed inside the container. We convert svg coords to page coords:
     const rect = container.getBoundingClientRect();
-    // cx/cy come in as numbers already in SVG coordinate space relative to the SVG origin.
-    // Recharts usually places SVG at left/top of container, so we can add rect.left/rect.top.
     return { x: rect.left + cx, y: rect.top + cy, containerRect: rect };
   };
 
-  // Handle dot click/hover/leave
   const handleDotClick = (dotProps) => {
     const { cx, cy, index } = dotProps;
     const pagePos = makePagePos(cx, cy);
-    // toggle on same index
     if (activeDot?.index === index) {
       setActiveDot(null);
     } else {
@@ -371,24 +479,21 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
     }
   };
 
-  const handleDotEnter = (dotProps) => {
-    // subtle highlight only (does not show tooltip unless clicked) — but user asked tooltip disappears when mouse leaves dot,
-    // so we won't open tooltip on hover. Instead we can store hover index if needed (omitted for brevity).
-  };
-
   const handleDotLeave = (dotProps) => {
-    // hide tooltip when cursor leaves the dot (per your request)
-    if (activeDot?.index === dotProps.index) {
-      setActiveDot(null);
-    }
+    if (activeDot?.index === dotProps.index) setActiveDot(null);
   };
 
   const chartConfig = { rating: { label: "Rating", color: "var(--chart-1)" } };
 
   return (
-    <Card ref={containerRef} className="bg-[var(--card)] border border-[var(--border)] shadow-md relative overflow-visible">
+    <Card
+      ref={containerRef}
+      className="bg-[var(--card)] border border-[var(--border)] shadow-md relative overflow-visible"
+    >
       <CardHeader>
-        <CardTitle className="text-[var(--primary)] text-lg">Contest Rating History</CardTitle>
+        <CardTitle className="text-[var(--primary)] text-lg">
+          Contest Rating History
+        </CardTitle>
         <CardDescription>Your progress across contests</CardDescription>
       </CardHeader>
 
@@ -396,12 +501,31 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
         {attendedContests.length > 0 ? (
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={data} margin={{ top: 20, right: 20, left: 20, bottom: 10 }}>
+              <LineChart
+                data={data}
+                margin={{ top: 20, right: 20, left: 20, bottom: 10 }}
+              >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={6} tickFormatter={(v) => v?.slice(5)} fontSize={11} stroke="#aaa" />
-                <YAxis dataKey="rating" tickLine={false} axisLine={false} tickMargin={6} fontSize={11} domain={["dataMin - 50", "dataMax + 50"]} stroke="#aaa"  tickFormatter={(value) => Math.round(value)} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={6}
+                  tickFormatter={(v) => v?.slice(5)}
+                  fontSize={11}
+                  stroke="#aaa"
+                />
+                <YAxis
+                  dataKey="rating"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={6}
+                  fontSize={11}
+                  domain={["dataMin - 50", "dataMax + 50"]}
+                  stroke="#aaa"
+                  tickFormatter={(v) => Math.round(v)}
+                />
 
-                {/* disable default tooltip */}
                 <ChartTooltip content={<></>} cursor={false} />
 
                 <Line
@@ -421,10 +545,18 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
                         stroke="#fff"
                         strokeWidth={1.6}
                         onClick={() => handleDotClick(dotProps)}
-                        onMouseEnter={() => handleDotEnter(dotProps)}
                         onMouseLeave={() => handleDotLeave(dotProps)}
-                        whileHover={{ scale: 1.18, filter: "drop-shadow(0 0 8px var(--color-rating))" }}
-                        animate={{ filter: isActive ? "drop-shadow(0 0 10px var(--color-rating))" : "none", scale: isActive ? 1.12 : 1 }}
+                        whileHover={{
+                          scale: 1.18,
+                          filter:
+                            "drop-shadow(0 0 8px var(--color-rating))",
+                        }}
+                        animate={{
+                          filter: isActive
+                            ? "drop-shadow(0 0 10px var(--color-rating))"
+                            : "none",
+                          scale: isActive ? 1.12 : 1,
+                        }}
                         transition={{ duration: 0.22, ease: "easeInOut" }}
                         style={{ cursor: "pointer" }}
                       />
@@ -435,13 +567,18 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
             </ResponsiveContainer>
           </ChartContainer>
         ) : (
-          <div className="w-full h-24 bg-gray-800 rounded-md flex items-center justify-center text-xs text-gray-400">📊 No attended contests to show.</div>
+          <div className="w-full h-24 bg-gray-800 rounded-md flex items-center justify-center text-xs text-gray-400">
+            📊 No attended contests to show.
+          </div>
         )}
       </CardContent>
 
-      {/* render tooltip (absolute) when active */}
       {activeDot && (
-        <CustomContestTooltip contest={activeDot.contest} position={activeDot.position} containerRect={containerRef.current.getBoundingClientRect()} />
+        <CustomContestTooltip
+          contest={activeDot.contest}
+          position={activeDot.position}
+          containerRect={containerRef.current.getBoundingClientRect()}
+        />
       )}
 
       {attendedContests.length > 0 && (
@@ -449,7 +586,9 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
           <div className="flex gap-2 leading-none font-medium text-white">
             Trending up overall <TrendingUp className="h-4 w-4 text-green-400" />
           </div>
-          <div className="text-gray-400 leading-none">Click on any dot to view contest details</div>
+          <div className="text-gray-400 leading-none">
+            Click on any dot to view contest details
+          </div>
         </CardFooter>
       )}
     </Card>
