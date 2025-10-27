@@ -12,7 +12,7 @@ import {
   Tooltip as ChartTooltipJS,
   Legend,
 } from "chart.js";
-import { Line as ChartLine } from "react-chartjs-2";
+
 import { useParams } from "react-router-dom";
 import ReactCalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
@@ -25,6 +25,7 @@ import {
   LineChart,
   XAxis,
   YAxis,
+   BarChart, Bar, Tooltip,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -198,50 +199,123 @@ export default function LeetCode({ platforms = {} }) {
         {/* Heatmap + Contest Info */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EnhancedHeatmap submissionCalendar={submissionCalendar} />
+           <ContestStatsCard contestRating={contestRating} />
 
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
-              Contest Stats
-            </h3>
-            {contestRating?.badge && (
-              <div className="flex items-center gap-3 mb-3 text-muted-foreground flex-wrap">
-                {contestRating.badge.icon !== "/default_icon.png" && (
-                  <img
-                    src={"https://leetcode.com" + contestRating.badge.icon}
-                    alt={contestRating.badge.name}
-                    title={contestRating.badge.name}
-                    className="w-5 h-5"
-                  />
-                )}
-                <span>{contestRating.badge.name}</span>
-                {contestRating.badge.expired && (
-                  <span className="text-red-400">(Expired)</span>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>Contests: {contestRating?.attendedContestsCount ?? "N/A"}</p>
-              <p>Rating: {Math.round(contestRating?.rating ?? 0)}</p>
-              <p>
-                Rank:{" "}
-                {contestRating?.globalRanking
-                  ? `#${contestRating.globalRanking}`
-                  : "N/A"}
-              </p>
-              <p>
-                Top %:{" "}
-                {contestRating?.topPercentage
-                  ? `${contestRating.topPercentage.toFixed(2)}%`
-                  : "N/A"}
-              </p>
-            </div>
-          </div>
         </section>
 
         <ContestRatingHistory attendedContests={attendedContests} data={rechartsData} />
       </div>
     </>
+  );
+}
+// 📊 ContestStatsCard component
+function ContestStatsCard({ contestRating }) {
+  const topPercentage = contestRating?.topPercentage
+    ? parseFloat(contestRating.topPercentage.toFixed(2))
+    : 0;
+
+  const topPercentageData = [
+    { name: "Top %", value: topPercentage },
+  ];
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[var(--card)] border border-[var(--border)] text-[var(--primary)] text-sm px-3 py-1.5 rounded-md shadow-lg">
+          <p>
+            Top %: <span className="font-semibold">{payload[0].value}%</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
+      <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
+        Contest Stats
+      </h3>
+
+      {/* 🏅 Badge Section */}
+      {contestRating?.badge && (
+        <div className="flex items-center gap-3 mb-4 text-muted-foreground flex-wrap">
+          {contestRating.badge.icon !== "/default_icon.png" && (
+            <img
+              src={"https://leetcode.com" + contestRating.badge.icon}
+              alt={contestRating.badge.name}
+              title={contestRating.badge.name}
+              className="w-6 h-6"
+            />
+          )}
+          <span className="font-medium">{contestRating.badge.name}</span>
+          {contestRating.badge.expired && (
+            <span className="text-red-400 text-sm">(Expired)</span>
+          )}
+        </div>
+      )}
+
+      {/* 📊 Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+        {/* Contests */}
+        <div className="bg-[var(--bg)] border border-[var(--border)] rounded-md p-3 hover:shadow-md transition">
+          <p className="text-xs text-muted-foreground">Contests</p>
+          <p className="text-lg font-semibold text-[var(--primary)] mt-1">
+            {contestRating?.attendedContestsCount ?? "N/A"}
+          </p>
+        </div>
+
+        {/* Rating */}
+        <div className="bg-[var(--bg)] border border-[var(--border)] rounded-md p-3 hover:shadow-md transition">
+          <p className="text-xs text-muted-foreground">Rating</p>
+          <p className="text-lg font-semibold text-[var(--primary)] mt-1">
+            {Math.round(contestRating?.rating ?? 0)}
+          </p>
+        </div>
+
+        {/* Rank */}
+        <div className="bg-[var(--bg)] border border-[var(--border)] rounded-md p-3 hover:shadow-md transition">
+          <p className="text-xs text-muted-foreground">Rank</p>
+          <p className="text-lg font-semibold text-[var(--primary)] mt-1">
+            {contestRating?.globalRanking
+              ? `#${contestRating.globalRanking}`
+              : "N/A"}
+          </p>
+        </div>
+
+        {/* Top % Vertical Bar */}
+        <div className="bg-[var(--bg)] border border-[var(--border)] rounded-md p-3 hover:shadow-md transition flex flex-col justify-between">
+          <p className="text-xs text-muted-foreground mb-1">Top %</p>
+
+          <div className="flex items-end justify-center h-24">
+            <ResponsiveContainer width="40%" height="100%">
+              <BarChart data={topPercentageData}>
+                <XAxis dataKey="name" hide />
+                <YAxis type="number" domain={[0, 100]} hide />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+                <Bar
+                  dataKey="value"
+                  fill="url(#colorBar)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={30}
+                  animationDuration={1200}
+                />
+                <defs>
+                  <linearGradient id="colorBar" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#10B981" />
+                    <stop offset="100%" stopColor="#34D399" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <p className="text-sm font-semibold text-[var(--primary)] text-center mt-2">
+            {topPercentage ? `${topPercentage.toFixed(2)}%` : "N/A"}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
