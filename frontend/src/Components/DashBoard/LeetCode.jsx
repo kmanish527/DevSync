@@ -25,6 +25,8 @@ import {
   LineChart,
   XAxis,
   YAxis,
+   RadialBarChart,
+  RadialBar,
    BarChart, Bar, Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -157,21 +159,8 @@ export default function LeetCode({ platforms = {} }) {
 
         {/* Problems + Submissions */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
-              Problems Solved
-            </h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              {stats.submitStatsGlobal?.map(({ difficulty, count }) => (
-                <div key={difficulty}>
-                  <p className="text-sm capitalize text-muted-foreground">{difficulty}</p>
-                  <p className={`text-2xl font-bold ${difficultyColor[difficulty] || ""}`}>
-                    {count}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProblemsSolvedCard stats={stats} />
+
 
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm col-span-2">
             <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
@@ -518,6 +507,8 @@ function CustomContestTooltip({ contest, position, containerRect }) {
   );
 }
 
+
+//contest rating history component
 export function ContestRatingHistory({ attendedContests = [], data = [] }) {
   const [activeDot, setActiveDot] = useState(null);
   const containerRef = useRef(null);
@@ -666,5 +657,101 @@ export function ContestRatingHistory({ attendedContests = [], data = [] }) {
         </CardFooter>
       )}
     </Card>
+  );
+}
+
+//problem solved card component
+
+function ProblemsSolvedCard({ stats }) {
+  const totalSolved =
+    stats.submitStatsGlobal?.reduce((sum, s) => sum + s.count, 0) || 0;
+
+  const difficultyColors = {
+    easy: "#10B981", // green
+    medium: "#FBBF24", // yellow
+    hard: "#EF4444", // red
+  };
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-[var(--card)] border border-[var(--border)] text-[var(--primary)] text-sm px-3 py-1.5 rounded-md shadow-lg">
+          <p className="capitalize">{data.difficulty}</p>
+          <p>
+            Solved: <span className="font-semibold">{data.count}</span>
+          </p>
+          <p>
+            Share:{" "}
+            <span className="font-semibold">
+              {((data.count / totalSolved) * 100).toFixed(1)}%
+            </span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-sm">
+      <h3 className="text-lg font-semibold mb-4 text-[var(--primary)]">
+        Problems Solved
+      </h3>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {stats.submitStatsGlobal?.map(({ difficulty, count }) => {
+          const percentage = totalSolved
+            ? (count / totalSolved) * 100
+            : 0;
+          const chartData = [
+            {
+              name: difficulty,
+              difficulty,
+              count,
+              fill: difficultyColors[difficulty.toLowerCase()] || "#8884d8",
+              value: percentage,
+            },
+          ];
+
+          return (
+            <div
+              key={difficulty}
+              className="bg-[var(--bg)] border border-[var(--border)] rounded-md p-4 flex flex-col items-center hover:shadow-md transition"
+            >
+              <p className="capitalize text-sm text-muted-foreground mb-2">
+                {difficulty}
+              </p>
+
+              <div className="w-24 h-24 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadialBarChart
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="70%"
+                    outerRadius="100%"
+                    barSize={12}
+                    data={chartData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      background
+                      dataKey="value"
+                      cornerRadius={8}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+
+                <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-[var(--primary)]">
+                  {count}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
