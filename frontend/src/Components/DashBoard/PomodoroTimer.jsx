@@ -1,7 +1,7 @@
 import { useContext } from "react";
-import Navbar from "../Navbar/Navbar"; 
 import ThemeContext from "../ui/theme-provider.jsx"; 
 import { useTimer } from "../../context/TimerContext.jsx";
+import Topbar from './Topbar';
 
 // Circular Timer Component
 function CircularTimer({ value, max, label, size = 140, isDarkMode }) {
@@ -88,7 +88,7 @@ export default function PomodoroTimer() {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${isDarkMode ? "bg-[#232b34] text-white" : "bg-gradient-to-br from-blue-100 to-white text-black"}`}>
-      <Navbar />
+      <Topbar/>
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-6">
         <h1 className="text-3xl md:text-4xl font-bold mb-10">
           {sessionLabels[sessionType]}

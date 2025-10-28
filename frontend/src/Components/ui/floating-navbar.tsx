@@ -1,6 +1,7 @@
 "use client";
 import React, { JSX, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// Import Link to handle internal routing
+import { useNavigate, Link } from "react-router-dom";
 import {
   motion,
   AnimatePresence,
@@ -12,6 +13,8 @@ import { cn } from "@/lib/utils";
 export const FloatingNav = ({
   navItems,
   className,
+  isAuthenticated, // <-- ADDED PROP
+  handleLogout,    // <-- ADDED PROP
 }: {
   navItems: {
     name: string;
@@ -19,9 +22,10 @@ export const FloatingNav = ({
     icon?: JSX.Element;
   }[];
   className?: string;
+  isAuthenticated?: boolean; // <-- ADDED PROP TYPE
+  handleLogout?: () => void;  // <-- ADDED PROP TYPE
 }) => {
   const { scrollYProgress } = useScroll();
-
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
 
@@ -57,29 +61,66 @@ export const FloatingNav = ({
           duration: 0.2,
         }}
         className={cn(
-          "flex max-w-fit  fixed top-10 inset-x-0 mx-auto border border-transparent dark:border-white/[0.2] rounded-full dark:bg-black bg-white shadow-[0px_2px_3px_-1px_RGBA(0,0,0,0.1),0px_1px_0px_0px_RGBA(25,28,33,0.02),0px_0px_0px_1px_RGBA(25,28,33,0.08)] z-[5000] pr-2 pl-8 py-2  items-center justify-center space-x-4",
+          "flex max-w-fit fixed top-10 inset-x-0 mx-auto border border-transparent dark:border-white/[0.2] rounded-full dark:bg-black bg-white shadow-[0px_2px_3px_-1px_RGBA(0,0,0,0.1),0px_1px_0px_0px_RGBA(25,28,33,0.02),0px_0px_0px_1px_RGBA(25,28,33,0.08)] z-[5000] pr-2 pl-8 py-2 items-center justify-center space-x-4",
           className
         )}
       >
-        {navItems.map((navItem: any, idx: number) => (
-          <a
-            key={`link=${idx}`}
-            href={navItem.link}
-            className="relative text-[15px] md:text-[16px] lg:text-[17px] font-medium transition-all duration-300 group flex items-center gap-2 hover:pb-1"
-            style={{ color: "var(--card-foreground)" }}
+        {navItems.map((navItem: any, idx: number) => {
+          // Check if link is external or an anchor
+          const isExternal =
+            navItem.link.startsWith("http") || navItem.link.startsWith("#");
+          
+          const content = (
+            <>
+              <span className="block sm:hidden">{navItem.icon}</span>
+              <span className="hidden sm:block text-sm">{navItem.name}</span>
+              <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
+            </>
+          );
+          
+          const itemClassName = "relative text-[15px] md:text-[16px] lg:text-[17px] font-medium transition-all duration-300 group flex items-center gap-2 hover:pb-1";
+
+          // Use <a> for external/anchor links, <Link> for internal links
+          return isExternal ? (
+            <a
+              key={`link=${idx}`}
+              href={navItem.link}
+              className={cn(itemClassName)}
+              style={{ color: "var(--card-foreground)" }}
+            >
+              {content}
+            </a>
+          ) : (
+            <Link
+              key={`link=${idx}`}
+              to={navItem.link}
+              className={cn(itemClassName)}
+              style={{ color: "var(--card-foreground)" }}
+            >
+              {content}
+            </Link>
+          );
+        })}
+
+        {/* --- MODIFIED SECTION: Conditional Login/Logout Button --- */}
+        {isAuthenticated ? (
+          <button
+            onClick={handleLogout}
+            className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-red-500 dark:text-red-400 px-4 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:cursor-pointer transition-colors"
           >
-            <span className="block sm:hidden">{navItem.icon}</span>
-            <span className="hidden sm:block text-sm">{navItem.name}</span>
-            <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
-          </a>
-        ))}
-        <button
-          onClick={() => navigate("/login")}
-          className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:cursor-pointer transition-colors"
-        >
-          <span>Login</span>
-          <span className="absolute inset-x-0 w-1/2 mx-auto -bottom-px bg-gradient-to-r from-transparent via-blue-500 to-transparent h-px" />
-        </button>
+            <span>Logout</span>
+            <span className="absolute inset-x-0 w-1/2 mx-auto -bottom-px bg-gradient-to-r from-transparent via-red-500 to-transparent h-px" />
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate("/login")}
+            className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:cursor-pointer transition-colors"
+          >
+            <span>Login</span>
+            <span className="absolute inset-x-0 w-1/2 mx-auto -bottom-px bg-gradient-to-r from-transparent via-blue-500 to-transparent h-px" />
+          </button>
+        )}
+        {/* --- END OF MODIFIED SECTION --- */}
       </motion.div>
     </AnimatePresence>
   );

@@ -164,8 +164,8 @@ const SuccessPopup = ({ isVisible, onClose, userName }) => {
 
             <h3 className="text-3xl font-bold text-primary">Success!</h3>
             <p className="text-lg text-foreground/90">
-              **{userName || "Your profile"}** has been **updated
-              successfully**.
+              <strong>{userName || "Your profile"}</strong> has been{" "}
+              <strong>updated successfully</strong>.
             </p>
             <p className="text-muted-foreground text-sm">
               Your changes are now live and visible to the community.
@@ -590,7 +590,7 @@ const Profile = () => {
   return (
     // Outer Container: Full Viewport Height
     <div className="h-screen w-full bg-background flex flex-col">
-       <div className="w-max">
+      <div className="w-max">
         <BackButton />
       </div>
       {/* Success Popup */}

@@ -9,6 +9,7 @@ import {
   Phone,
   HelpCircle,
   X,
+  LayoutDashboard, // Make sure this is imported
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingNav } from "../ui/floating-navbar";
@@ -19,73 +20,85 @@ const publicNavItems = [
   { name: "Home", link: "/", icon: <Home className="h-4 w-4" /> },
   { name: "Features", link: "#features", icon: <Sparkle className="h-4 w-4" /> },
   { name: "About us", link: "#about", icon: <Info className="h-4 w-4" /> },
-  { name: "Github", link: "https://github.com/DevSyncx/DevSync.git", icon: <Github className="h-4 w-4" /> },
+  {
+    name: "Github",
+    link: "https://github.com/DevSyncx/DevSync.git",
+    icon: <Github className="h-4 w-4" />,
+  },
   { name: "Contact Us", link: "#contact", icon: <Phone className="h-4 w-4" /> },
   { name: "FAQ", link: "#faq", icon: <HelpCircle className="h-4 w-4" /> },
 ];
 
+const authenticatedNavItems = [
+  { name: "Dashboard", link: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { name: "Profile", link: "/profile", icon: <UserCircle className="h-4 w-4" /> },
+  { name: "Timer", link: "/pomodoro", icon: <Clock className="h-4 w-4" /> },
+];
+
+
 // --- Mobile Navigation Overlay Component (defined in the same file) ---
 const MobileNavOverlay = ({ isOpen, onClose, navItems, isAuthenticated, handleLogout }) => {
-    const overlayClasses = `mobile-nav-overlay ${isOpen ? "open" : ""}`;
+  const overlayClasses = `mobile-nav-overlay ${isOpen ? "open" : ""}`;
 
-    const handleLinkClick = () => {
-      onClose();
-    };
-    
-    const handleLogoutClick = () => {
-      handleLogout();
-      onClose();
-    }
+  const handleLinkClick = () => {
+    onClose();
+  };
+  
+  const handleLogoutClick = () => {
+    handleLogout();
+    onClose();
+  }
 
-    return (
-      <div className={overlayClasses}>
-        <button onClick={onClose} className="absolute top-8 right-8 text-foreground">
-          <X size={32} />
-        </button>
-        <nav className="flex flex-col items-center justify-center h-full">
-          <ul>
-            {!isAuthenticated ? (
-              navItems.map((item) => (
-                <li key={item.name}>
-                  <a href={item.link} onClick={handleLinkClick}>
-                    {item.name}
-                  </a>
-                </li>
-              ))
-            ) : (
-              <>
-                <li>
-                  <Link to="/profile" onClick={handleLinkClick}>
-                    Profile
-                  </Link>
-                </li>
-                {/* Add other authenticated links here */}
-              </>
-            )}
-          </ul>
-        </nav>
-
-        <div className="mobile-nav-footer">
+  return (
+    <div className={overlayClasses}>
+      <button onClick={onClose} className="absolute top-8 right-8 text-foreground">
+        <X size={32} />
+      </button>
+      <nav className="flex flex-col items-center justify-center h-full">
+        <ul>
           {!isAuthenticated ? (
-            <>
-              <Link to="/register" className="w-full">
-                <button onClick={handleLinkClick} className="signup-btn-mobile">
-                  Sign Up
-                </button>
-              </Link>
-              <DarkModeToggle />
-            </>
+            navItems.map((item) => (
+              <li key={item.name}>
+                <a href={item.link} onClick={handleLinkClick}>
+                  {item.name}
+                </a>
+              </li>
+            ))
           ) : (
-            <>
-              <button onClick={handleLogoutClick} className="logout-btn-mobile">
-                Logout
-              </button>
-              <DarkModeToggle />
-            </>
+            // --- MODIFIED SECTION: Use authenticatedNavItems for mobile menu ---
+            authenticatedNavItems.map((item) => (
+              <li key={item.name}>
+                <Link to={item.link} onClick={handleLinkClick}>
+                  {item.name}
+                </Link>
+              </li>
+            ))
+            // --- END OF MODIFIED SECTION ---
           )}
-        </div>
+        </ul>
+      </nav>
+
+      <div className="mobile-nav-footer">
+        {!isAuthenticated ? (
+          <>
+            <Link to="/register" className="w-full">
+              <button onClick={handleLinkClick} className="signup-btn-mobile">
+                Sign Up
+              </button>
+            </Link>
+            <DarkModeToggle />
+          </>
+        ) : (
+          <>
+            <button onClick={handleLogoutClick} className="logout-btn-mobile">
+              Logout
+            </button>
+            <DarkModeToggle />
+          </>
+        )}
       </div>
-    );
+    </div>
+  );
 }; 
 
 
@@ -162,57 +175,70 @@ const Navbar = () => {
             </Link>
 
             <nav className="hidden lg:flex space-x-6 lg:space-x-8 items-center">
-               {!isAuthenticated &&
-                 publicNavItems.map((item) => (
-                   <a
-                     key={item.name}
-                     href={item.link}
-                     className="relative text-[15px] md:text-[16px] lg:text-[17px] font-medium transition-all duration-300 group flex items-center gap-2 hover:pb-1"
-                     style={{ color: "var(--card-foreground)" }}
-                   >
-                     {item.icon} <span>{item.name}</span>
-                     <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
-                   </a>
-                 ))}
+                {/* --- Public Nav Items --- */}
+                {!isAuthenticated &&
+                  publicNavItems.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.link}
+                      className="relative text-[15px] md:text-[16px] lg:text-[17px] font-medium transition-all duration-300 group flex items-center gap-2 hover:pb-1"
+                      style={{ color: "var(--card-foreground)" }}
+                    >
+                      {item.icon} <span>{item.name}</span>
+                      <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
+                    </a>
+                  ))}
 
-               {isAuthenticated && isRunning && (
-                 <div
-                   onClick={() => navigate("/pomodoro")}
-                   className="flex items-center gap-2 cursor-pointer px-3 py-1 rounded-lg transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-md hover:shadow-[var(--primary)]/30"
-                 >
-                   <Clock className="w-5 h-5 text-blue-500 animate-pulse" />
-                   <span className="text-sm font-mono">{displayTime}</span>
-                 </div>
-               )}
+                {/* --- MODIFIED SECTION: Authenticated Nav Items --- */}
+                {/* We now map over authenticatedNavItems instead of hardcoding 'Profile' */}
+                {isAuthenticated &&
+                  authenticatedNavItems.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.link}
+                      className="relative text-[15px] md:text-[16px] lg:text-[17px] font-medium transition-all duration-300 group flex items-center gap-2 hover:pb-1"
+                      style={{ color: "var(--card-foreground)" }}
+                    >
+                      {item.icon} <span>{item.name}</span>
+                      <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
+                    </Link>
+                  ))}
+                {/* --- END OF MODIFIED SECTION --- */}
 
-               {isAuthenticated ? (
-                 <div className="flex items-center gap-3 ml-4">
-                   <Link
-                     to="/profile"
-                     className="flex items-center gap-2 text-[16px] lg:text-[17px] font-medium relative group"
-                     style={{ color: "var(--primary)" }}
-                   >
-                     <UserCircle className="h-4 w-4" /> <span>Profile</span>
-                     <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-gradient-to-r from-[var(--primary)] to-purple-500 transition-all duration-500 group-hover:w-full"></span>
-                   </Link>
-                   <button
-                     onClick={handleLogout}
-                     className="text-[16px] lg:text-[17px] font-medium text-red-500 transition-colors duration-300 hover:text-red-600"
-                   >
-                     Logout
-                   </button>
-                   <DarkModeToggle />
-                 </div>
-               ) : (
-                 <div className="flex items-center gap-3 ml-4">
-                   <Link to="/register">
-                     <button className="px-4 md:px-5 lg:px-6 py-2 rounded-md font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] shadow-md transition-transform duration-300 hover:scale-105 hover:shadow-lg cursor-pointer text-sm md:text-base">
-                       Sign Up
-                     </button>
-                   </Link>
-                   <DarkModeToggle />
-                 </div>
-               )}
+
+                {/* --- Timer Display --- */}
+                {isAuthenticated && isRunning && (
+                  <div
+                    onClick={() => navigate("/pomodoro")}
+                    className="flex items-center gap-2 cursor-pointer px-3 py-1 rounded-lg transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:shadow-md hover:shadow-[var(--primary)]/30"
+                  >
+                    <Clock className="w-5 h-5 text-blue-500 animate-pulse" />
+                    <span className="text-sm font-mono">{displayTime}</span>
+                  </div>
+                )}
+
+                {/* --- Auth/Public Buttons --- */}
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-3 ml-4">
+                    {/* The Profile link is now part of the map above */}
+                    <button
+                      onClick={handleLogout}
+                      className="text-[16px] lg:text-[17px] font-medium text-red-500 transition-colors duration-300 hover:text-red-600"
+                    >
+                      Logout
+                    </button>
+                    <DarkModeToggle />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 ml-4">
+                    <Link to="/register">
+                      <button className="px-4 md:px-5 lg:px-6 py-2 rounded-md font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] shadow-md transition-transform duration-300 hover:scale-105 hover:shadow-lg cursor-pointer text-sm md:text-base">
+                        Sign Up
+                      </button>
+                    </Link>
+                    <DarkModeToggle />
+                  </div>
+                )}
             </nav>
 
             <div className="lg:hidden">
@@ -244,17 +270,21 @@ const Navbar = () => {
       <MobileNavOverlay
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
-        navItems={publicNavItems}
+        navItems={publicNavItems} // This is correct, MobileNavOverlay handles auth logic internally
         isAuthenticated={isAuthenticated}
         handleLogout={handleLogout}
       />
 
+      {/* This part was already correct from our last change */}
       {showFloating && (
-        <FloatingNav navItems={!isAuthenticated ? publicNavItems : []} />
+        <FloatingNav
+          navItems={isAuthenticated ? authenticatedNavItems : publicNavItems}
+          isAuthenticated={isAuthenticated}
+          handleLogout={handleLogout}
+        />
       )}
     </div>
   );
 };
 
 export default Navbar;
-
