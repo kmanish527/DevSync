@@ -1,11 +1,10 @@
-// src/Components/DashBoard/Pomodoro.jsx
 import React from 'react';
-import { useTimer } from "../../context/TimerContext";
+import { useTimer } from "../../context/TimerContext"; 
 import { useNavigate } from 'react-router-dom';
 
 const Pomodoro = () => {
   const navigate = useNavigate();
-  const { timeLeft, isWork, startTimer, pauseTimer, resetTimer } = useTimer();
+  const { timeLeft, isWork, startTimer, pauseTimer, resetTimer, isRunning } = useTimer();
 
   const formatTime = (seconds) => {
     const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -40,18 +39,21 @@ const Pomodoro = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-6">
-          <button
-            onClick={startTimer}
-            className="bg-yellow-400 text-black px-6 py-3 sm:px-8 sm:py-3 text-lg sm:text-xl md:text-2xl rounded shadow-md font-bold hover:scale-105 duration-100"
-          >
-            Start
-          </button>
-          <button
-            onClick={pauseTimer}
-            className="bg-orange-400 text-black px-6 py-3 sm:px-8 sm:py-3 text-lg sm:text-xl md:text-2xl rounded shadow-md font-bold hover:scale-105 duration-100"
-          >
-            Pause
-          </button>
+          {!isRunning ? (
+            <button
+              onClick={startTimer}
+              className="bg-yellow-400 text-black px-6 py-3 sm:px-8 sm:py-3 text-lg sm:text-xl md:text-2xl rounded shadow-md font-bold hover:scale-105 duration-100"
+            >
+              Start
+            </button>
+          ) : (
+            <button
+              onClick={pauseTimer}
+              className="bg-orange-400 text-black px-6 py-3 sm:px-8 sm:py-3 text-lg sm:text-xl md:text-2xl rounded shadow-md font-bold hover:scale-105 duration-100"
+            >
+              Pause
+            </button>
+          )}
           <button
             onClick={resetTimer}
             className="bg-red-400 text-black px-6 py-3 sm:px-8 sm:py-3 text-lg sm:text-xl md:text-2xl rounded shadow-md font-bold hover:scale-105 duration-100"

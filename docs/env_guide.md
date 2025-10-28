@@ -17,6 +17,9 @@ PORT=5000
 # URL of the frontend client
 CLIENT_URL=http://localhost:5173
 
+# ID of the chrome extension, if should be in frontend .env 
+VITE_CHROME_EXTENSION_ID =<your-extension-id> 
+
 # -----------------------------
 # Database Settings
 # -----------------------------

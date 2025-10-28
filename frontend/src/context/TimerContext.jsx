@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
+// --- This is the ID of your companion Chrome Extension ---
+const EXTENSION_ID = import.meta.env.VITE_CHROME_EXTENSION_ID;
+
 const TimerContext = createContext();
 
 export function useTimer() {
@@ -8,13 +11,48 @@ export function useTimer() {
 
 const SESSIONS_BEFORE_LONG_BREAK = 4;
 
+const sendStartFocusMessage = (durationInSeconds) => {
+  if (window.chrome && window.chrome.runtime) {
+    const durationInMinutes = Math.floor(durationInSeconds / 60);
+    chrome.runtime.sendMessage(EXTENSION_ID, {
+      command: "startFocus",
+      duration: durationInMinutes
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Could not connect to extension. Is it installed and is the ID correct?");
+      } else {
+        console.log("Extension acknowledged start.", response);
+      }
+    });
+  } else {
+    console.warn("Chrome Extension API not found. Please install the DevSync companion extension.");
+  }
+};
+
+const sendStopFocusMessage = () => {
+  if (window.chrome && window.chrome.runtime) {
+    chrome.runtime.sendMessage(EXTENSION_ID, {
+      command: "stopFocus"
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error sending stop message to extension.");
+      } else {
+        console.log("Extension acknowledged stop.", response);
+      }
+    });
+  }
+};
+
+
 export function TimerProvider({ children }) {
+  // --- Timer Settings State ---
   const [workTime, setWorkTime] = useState(25 * 60);
   const [shortBreak, setShortBreak] = useState(5 * 60);
   const [longBreak, setLongBreak] = useState(15 * 60);
 
+  // --- Timer Operation State ---
   const [isRunning, setIsRunning] = useState(false);
-  const [isWork, setIsWork] = useState(true);
+  const [sessionType, setSessionType] = useState('work'); // 'work', 'shortBreak', 'longBreak'
   const [sessions, setSessions] = useState(() => Number(localStorage.getItem("pomodoroSessions")) || 0);
 
   const [endTimestamp, setEndTimestamp] = useState(() => {
@@ -27,10 +65,16 @@ export function TimerProvider({ children }) {
     return saved ? Number(saved) : workTime;
   });
 
-  // Timer tick using requestAnimationFrame
+  // Re-sync timeLeft if workTime changes and timer is not running
+  useEffect(() => {
+    if (sessionType === 'work' && !isRunning) {
+      setTimeLeft(workTime);
+    }
+  }, [workTime]);
+
+  // --- Timer Tick Logic (using requestAnimationFrame) ---
   useEffect(() => {
     let raf;
-
     const tick = () => {
       if (isRunning && endTimestamp) {
         const now = Date.now();
@@ -48,84 +92,115 @@ export function TimerProvider({ children }) {
     if (isRunning) {
       raf = requestAnimationFrame(tick);
     }
-
     return () => cancelAnimationFrame(raf);
   }, [isRunning, endTimestamp]);
 
-  // Persist timer info
+  // --- Persist Timer Info to localStorage ---
   useEffect(() => localStorage.setItem("pomodoroTimeLeft", timeLeft), [timeLeft]);
   useEffect(() => localStorage.setItem("pomodoroSessions", sessions), [sessions]);
   useEffect(() => {
-    if (endTimestamp) localStorage.setItem("pomodoroEndTimestamp", endTimestamp);
+    if (endTimestamp) {
+      localStorage.setItem("pomodoroEndTimestamp", endTimestamp);
+    } else {
+      localStorage.removeItem("pomodoroEndTimestamp");
+    }
   }, [endTimestamp]);
 
+  // --- Session End Logic ---
   const handleSessionEnd = () => {
-    const nextSession = isWork ? sessions + 1 : sessions;
-    setSessions(nextSession);
-    const nextTime = isWork
-      ? nextSession % SESSIONS_BEFORE_LONG_BREAK === 0
-        ? longBreak
-        : shortBreak
-      : workTime;
+    setIsRunning(false);
+    setEndTimestamp(null);
 
-    setIsWork(prev => !prev);
+    let nextSessionType;
+    let nextTime;
+
+    if (sessionType === 'work') {
+      sendStopFocusMessage();
+      const nextSessionNum = sessions + 1;
+      setSessions(nextSessionNum);
+
+      if (nextSessionNum % SESSIONS_BEFORE_LONG_BREAK === 0) {
+        nextSessionType = 'longBreak';
+        nextTime = longBreak;
+      } else {
+        nextSessionType = 'shortBreak';
+        nextTime = shortBreak;
+      }
+    } else {
+      nextSessionType = 'work';
+      nextTime = workTime;
+    }
+
+    setSessionType(nextSessionType);
     setTimeLeft(nextTime);
-    setEndTimestamp(Date.now() + nextTime * 1000);
-    setIsRunning(true);
 
+    // Notification
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification(
-        isWork ? "Work session complete! Time for a break 🎉" : "Break over! Back to work 💻"
+        sessionType === 'work' ? "Work session complete! Time for a break 🎉" : "Break over! Back to work 💻"
       );
     }
   };
 
   const startTimer = () => {
-    if (!endTimestamp) setEndTimestamp(Date.now() + timeLeft * 1000);
+    setEndTimestamp(Date.now() + timeLeft * 1000);
     setIsRunning(true);
+
+    if (sessionType === 'work') {
+      sendStartFocusMessage(timeLeft);
+    }
   };
 
-  const pauseTimer = () => setIsRunning(false);
+  const pauseTimer = () => {
+    setIsRunning(false);
+    localStorage.setItem("pomodoroTimeLeft", timeLeft);
+    setEndTimestamp(null);
+    sendStopFocusMessage();
+  };
 
   const resetTimer = () => {
     setIsRunning(false);
-    setIsWork(true);
+    setSessionType('work');
     setTimeLeft(workTime);
     setSessions(0);
     setEndTimestamp(null);
+    sendStopFocusMessage();
   };
 
   const updateWorkTime = (minutes) => {
     const secs = Math.max(1, minutes) * 60;
     setWorkTime(secs);
-    if (isWork) {
+    if (sessionType === 'work' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(Date.now() + secs * 1000);
+      setEndTimestamp(null);
     }
   };
   const updateShortBreak = (minutes) => {
     const secs = Math.max(1, minutes) * 60;
     setShortBreak(secs);
-    if (!isWork && sessions % SESSIONS_BEFORE_LONG_BREAK !== 0) {
+    if (sessionType === 'shortBreak' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(Date.now() + secs * 1000);
+      setEndTimestamp(null);
     }
   };
   const updateLongBreak = (minutes) => {
     const secs = Math.max(1, minutes) * 60;
     setLongBreak(secs);
-    if (!isWork && sessions % SESSIONS_BEFORE_LONG_BREAK === 0) {
+    if (sessionType === 'longBreak' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(Date.now() + secs * 1000);
+      setEndTimestamp(null);
     }
   };
 
-  // Request notification permission once
+
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
+  
+  
+  const isWork = sessionType === 'work';
 
   return (
     <TimerContext.Provider
@@ -135,7 +210,8 @@ export function TimerProvider({ children }) {
         longBreak,
         timeLeft,
         isRunning,
-        isWork,
+        isWork, 
+        sessionType, 
         sessions,
         startTimer,
         pauseTimer,

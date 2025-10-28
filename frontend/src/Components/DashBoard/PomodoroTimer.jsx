@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import Navbar from "../Navbar/Navbar";
-import ThemeContext from "../ui/theme-provider.jsx";
+import Navbar from "../Navbar/Navbar"; 
+import ThemeContext from "../ui/theme-provider.jsx"; 
 import { useTimer } from "../../context/TimerContext.jsx";
 
 // Circular Timer Component
@@ -55,6 +55,13 @@ function CircularTimer({ value, max, label, size = 140, isDarkMode }) {
   );
 }
 
+// Labels for each session type
+const sessionLabels = {
+  work: "Focus Time 💻",
+  shortBreak: "Short Break ☕",
+  longBreak: "Long Break 🚶‍♂️"
+};
+
 export default function PomodoroTimer() {
   const { theme } = useContext(ThemeContext);
   const isDarkMode = theme === "dark";
@@ -62,11 +69,11 @@ export default function PomodoroTimer() {
   const {
     timeLeft,
     isRunning,
-    isWork,
+    sessionType, 
     sessions,
-    startTimer,
-    pauseTimer,
-    resetTimer,
+    startTimer, 
+    pauseTimer, 
+    resetTimer, 
     workTime,
     shortBreak,
     longBreak,
@@ -83,7 +90,9 @@ export default function PomodoroTimer() {
     <div className={`min-h-screen flex flex-col transition-colors duration-500 ${isDarkMode ? "bg-[#232b34] text-white" : "bg-gradient-to-br from-blue-100 to-white text-black"}`}>
       <Navbar />
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-10">{isWork ? "Focus Time 💻" : "Break Time ☕"}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-10">
+          {sessionLabels[sessionType]}
+        </h1>
 
         <div style={{ display: "flex", alignItems: "center", gap: "54px", marginBottom: "36px", justifyContent: "center" }}>
           <CircularTimer value={minutes} max={59} label="MINUTES" size={140} isDarkMode={isDarkMode} />
@@ -115,11 +124,11 @@ export default function PomodoroTimer() {
 
         <div className="flex gap-2 mb-4">
           {[...Array(SESSIONS_BEFORE_LONG_BREAK)].map((_, i) => (
-            <div key={i} className={`w-5 h-5 rounded-full transition-colors duration-500 ${i < (sessions % SESSIONS_BEFORE_LONG_BREAK) && isWork ? "bg-green-400" : isDarkMode ? "bg-gray-600" : "bg-gray-400"}`} />
+            <div key={i} className={`w-5 h-5 rounded-full transition-colors duration-500 ${i < sessions ? "bg-green-400" : isDarkMode ? "bg-gray-600" : "bg-gray-400"}`} />
           ))}
         </div>
         <p className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"} transition-colors duration-500`}>
-          Session {sessions + 1} {isWork ? "(Work)" : "(Break)"}
+          {sessionType === 'work' ? `Session ${sessions + 1} of ${SESSIONS_BEFORE_LONG_BREAK}` : "Break Time"}
         </p>
       </div>
     </div>

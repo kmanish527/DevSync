@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "DevSync Enforcer",
+  "version": "1.0",
+  "description": "Companion extension for the DevSync Pomodoro app.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "webNavigation",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "*://localhost/*",
+      "*://your-devsync-domain.com/*"
+    ]
+  }
+}
