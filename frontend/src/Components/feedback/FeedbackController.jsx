@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import FeedbackPopup from "./FeedbackPopup";
 import { useFeedback } from "../../context/FeedbackContext";
+import { toast } from 'react-toastify';
 
 const FEEDBACK_INTERVAL_DAYS = 5; // Number of days between feedback prompts
 const FEEDBACK_STORAGE_KEY = "devSync_feedback_state";
@@ -125,11 +126,11 @@ export default function FeedbackController({ user }) {
       );
       
       // Show success message
-      alert("Thank you for your feedback!");
+      toast.success("Thank you for your feedback!");
       
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback. Please try again later.");
+      toast.success("Failed to submit feedback. Please try again later.");
     }
   };
   

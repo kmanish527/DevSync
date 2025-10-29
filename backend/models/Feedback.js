@@ -3,8 +3,7 @@ const Schema = mongoose.Schema;
 
 const FeedbackSchema = new Schema({
   userId: {
-    type: String,
-    required: true
+    type: String
   },
   rating: {
     type: Number,

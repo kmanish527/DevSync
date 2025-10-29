@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect ,useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,20 @@ export default function FeedbackPopup({ open, onOpenChange, onSubmit, userInfo }
   const [category, setCategory] = useState("other");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [errors, setErrors] = useState({ rating: "", comment: "" });
+
+  const resetForm = () => {
+    setRating(0);
+    setComment("");
+    setCategory("other");
+    setIsAnonymous(false);
+    setErrors({ rating: "", comment: "" });
+  };
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open]); 
 
   const handleRatingChange = (value) => {
     setRating(value);

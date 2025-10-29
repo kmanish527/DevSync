@@ -19,16 +19,17 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'Please provide feedback with at least 10 characters' });
     }
     
-    // Create a new feedback instance
-    const newFeedback = new Feedback({
-      userId: req.user.id,
+    const feedbackData = {
       rating,
       comment,
-      category: category || 'other',
-      isAnonymous: isAnonymous || false
-    });
-    
-    // Save the feedback to the database
+      category: category || "other",
+      isAnonymous: isAnonymous || false,
+    };
+
+    if (!feedbackData.isAnonymous) {
+      feedbackData.userId = req.user.id;
+    }
+    const newFeedback = new Feedback(feedbackData);
     await newFeedback.save();
     
     res.json({ success: true, message: 'Feedback submitted successfully' });
