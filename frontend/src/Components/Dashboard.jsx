@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [goals, setGoals] = useState([]);
+
   const navigate = useNavigate();
   const { openFeedbackPopup } = useFeedback();
 
@@ -51,6 +52,19 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+  const [streak, setStreak] = useState(0);
+
+
+useEffect(() => {
+  if (profile?.activity?.length) {
+    setStreak(calculateStreak(profile.activity));
+  } else {
+    setStreak(0);
+  }
+}, [profile?.activity]);
+
+
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,21 +78,8 @@ export default function Dashboard() {
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
     }
-
-    const fetchAndUpdateProfile = async () => {
-      await fetchProfile();
-
-      // After profile is loaded, add today to activity if not present
-      if (profile) {
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-        if (!profile.activity.includes(today)) {
-          handleActivityAdd(today);
-        }
-      }
-    };
-
-    fetchAndUpdateProfile();
-  }, [navigate]);
+ fetchProfile();
+}, [navigate]);
 
   // --- Handlers for real-time updates ---
   const handleGoalsChange = async (updatedGoals) => {
@@ -109,19 +110,50 @@ export default function Dashboard() {
     }
   };
 
-  const handleActivityAdd = async (date) => {
-    setProfile((prev) => ({ ...prev, activity: [...prev.activity, date] }));
-    try {
-      const token = getAuthToken();
-      await fetch(`${import.meta.env.VITE_API_URL}/api/profile/activity`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "x-auth-token": token },
-        body: JSON.stringify({ date }),
-      });
-    } catch (err) {
-      console.error("Error updating activity:", err);
-    }
-  };
+// Calculate the user's current streak of activity
+const calculateStreak = (activityDates) => {
+  if (!Array.isArray(activityDates) || activityDates.length === 0) return 0;
+
+  // Filter out invalid or falsy dates
+  const validDates = activityDates
+    .map((d) => {
+      const date = new Date(d);
+      return isNaN(date) ? null : date;
+    })
+    .filter(Boolean);
+
+  if (validDates.length === 0) return 0;
+
+  // Sort valid dates ascending
+  const sorted = validDates.sort((a, b) => a - b);
+
+  const today = new Date();
+  const lastActivity = sorted[sorted.length - 1];
+
+  // Normalize to remove time zone drift
+  const diffDays = Math.floor(
+    (today.setHours(0, 0, 0, 0) - lastActivity.setHours(0, 0, 0, 0)) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  // Missed a day → reset
+  if (diffDays > 1) return 0;
+
+  let streak = 1;
+  for (let i = sorted.length - 1; i > 0; i--) {
+    const current = sorted[i];
+    const prev = sorted[i - 1];
+    const gap =
+      (current.setHours(0, 0, 0, 0) - prev.setHours(0, 0, 0, 0)) /
+      (1000 * 60 * 60 * 24);
+    if (gap === 1) streak++;
+    else if (gap > 1) break;
+  }
+
+  return streak;
+};
+
+
 
   const handleTimeUpdate = async (newTime) => {
     setProfile((prev) => ({ ...prev, timeSpent: newTime }));
@@ -174,7 +206,6 @@ export default function Dashboard() {
 
   const {
     socialLinks = {},
-    streak = 0,
     timeSpent = "0 minutes",
     activity = [],
     notes = [],

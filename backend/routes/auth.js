@@ -9,7 +9,8 @@ const crypto = require("crypto");
 require("dotenv").config();
 const passport = require("passport");
 const { sendVerificationEmail } = require("../services/emailService");
-const { generateVerificationCode, generateJWT, formatUserResponse, setVerificationToken, handleVerificationEmail } = require("../utils/emailVerificationHelpers")
+const { generateVerificationCode, generateJWT, formatUserResponse, setVerificationToken, handleVerificationEmail } = require("../utils/emailVerificationHelpers");
+const { logUserActivity } = require("../utils/activityhelper");
 
 // Helper function to generate avatar URL from email or name
 const generateAvatarUrl = (email, name) => {
@@ -57,6 +58,7 @@ router.get(
       console.log('OAuth successful, user:', req.user);
       // Issue JWT and redirect to frontend with token as query param
       // Frontend reads ?token=... on /dashboard and stores it
+      await logUserActivity(req.user.id);
       const token = await generateJWT(req.user.id);
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard?token=${encodeURIComponent(token)}`;
       return res.redirect(redirectUrl);
@@ -87,6 +89,7 @@ router.get(
   }),
   async (req, res) => {
     try {
+      await logUserActivity(req.user.id);
       const token = await generateJWT(req.user.id);
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard?token=${encodeURIComponent(token)}`;
       return res.redirect(redirectUrl);
@@ -404,6 +407,7 @@ router.post(
       } else {
         // Generate JWT token
         try {
+          await logUserActivity(user.id);
           const token = await generateJWT(user.id);
           res.json({
             message: "Login successful",
