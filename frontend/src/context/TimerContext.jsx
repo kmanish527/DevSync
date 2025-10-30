@@ -11,33 +11,40 @@ export function useTimer() {
 
 const SESSIONS_BEFORE_LONG_BREAK = 4;
 
-const sendStartFocusMessage = (durationInSeconds) => {
-  if (window.chrome && window.chrome.runtime) {
-    const durationInMinutes = Math.floor(durationInSeconds / 60);
+const sendStartTimerMessage = (state) => {
+  if (window.chrome && window.chrome.runtime && EXTENSION_ID) {
     chrome.runtime.sendMessage(EXTENSION_ID, {
-      command: "startFocus",
-      duration: durationInMinutes
+      command: "startTimer", 
+      endTime: Date.now() + state.timeLeft * 1000,
+      sessionType: state.sessionType,
+      sessionCount: state.sessions,
+      settings: {
+        workTime: state.workTime,
+        shortBreak: state.shortBreak,
+        longBreak: state.longBreak,
+        SESSIONS_BEFORE_LONG_BREAK: SESSIONS_BEFORE_LONG_BREAK
+      }
     }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error("Could not connect to extension. Is it installed and is the ID correct?");
+        console.error(`Could not start timer: ${chrome.runtime.lastError.message}`);
       } else {
-        console.log("Extension acknowledged start.", response);
+        console.log("Extension acknowledged timer start.", response);
       }
     });
   } else {
-    console.warn("Chrome Extension API not found. Please install the DevSync companion extension.");
+    console.warn("Chrome Extension API not found.");
   }
 };
 
-const sendStopFocusMessage = () => {
-  if (window.chrome && window.chrome.runtime) {
+const sendStopTimerMessage = () => {
+  if (window.chrome && window.chrome.runtime && EXTENSION_ID) {
     chrome.runtime.sendMessage(EXTENSION_ID, {
-      command: "stopFocus"
+      command: "stopTimer"
     }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error("Error sending stop message to extension.");
+        console.error(`Could not stop timer: ${chrome.runtime.lastError.message}`);
       } else {
-        console.log("Extension acknowledged stop.", response);
+        console.log("Extension acknowledged timer stop.", response);
       }
     });
   }
@@ -45,126 +52,115 @@ const sendStopFocusMessage = () => {
 
 
 export function TimerProvider({ children }) {
-  // --- Timer Settings State ---
-  const [workTime, setWorkTime] = useState(25 * 60);
-  const [shortBreak, setShortBreak] = useState(5 * 60);
-  const [longBreak, setLongBreak] = useState(15 * 60);
+  const [workTime, setWorkTime] = useState(() => {
+    const saved = localStorage.getItem("devsync-workTime");
+    return saved ? Number(saved) : 25 * 60; 
+  });
+  const [shortBreak, setShortBreak] = useState(() => {
+    const saved = localStorage.getItem("devsync-shortBreak");
+    return saved ? Number(saved) : 5 * 60;
+  });
+  const [longBreak, setLongBreak] = useState(() => {
+    const saved = localStorage.getItem("devsync-longBreak");
+    return saved ? Number(saved) : 15 * 60;
+  });
 
-  // --- Timer Operation State ---
   const [isRunning, setIsRunning] = useState(false);
-  const [sessionType, setSessionType] = useState('work'); // 'work', 'shortBreak', 'longBreak'
-  const [sessions, setSessions] = useState(() => Number(localStorage.getItem("pomodoroSessions")) || 0);
+  const [sessionType, setSessionType] = useState('work');
+  const [sessions, setSessions] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(workTime);
 
-  const [endTimestamp, setEndTimestamp] = useState(() => {
-    const saved = localStorage.getItem("pomodoroEndTimestamp");
-    return saved ? Number(saved) : null;
-  });
-
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const saved = localStorage.getItem("pomodoroTimeLeft");
-    return saved ? Number(saved) : workTime;
-  });
-
-  // Re-sync timeLeft if workTime changes and timer is not running
   useEffect(() => {
-    if (sessionType === 'work' && !isRunning) {
-      setTimeLeft(workTime);
-    }
-  }, [workTime]);
-
-  // --- Timer Tick Logic (using requestAnimationFrame) ---
-  useEffect(() => {
-    let raf;
-    const tick = () => {
-      if (isRunning && endTimestamp) {
-        const now = Date.now();
-        const remaining = Math.max(Math.ceil((endTimestamp - now) / 1000), 0);
-        setTimeLeft(remaining);
-
-        if (remaining <= 0) {
-          handleSessionEnd();
-        } else {
-          raf = requestAnimationFrame(tick);
+    if (window.chrome && window.chrome.runtime && EXTENSION_ID) {
+      chrome.runtime.sendMessage(EXTENSION_ID, { command: "getState" }, (state) => {
+        if (chrome.runtime.lastError) {
+          console.warn(`Could not get state from extension: ${chrome.runtime.lastError.message}`);
+        } else if (state) {
+          console.log("Got initial state from extension:", state);
+          setIsRunning(state.isRunning || false);
+          setSessionType(state.timerSessionType || 'work');
+          setSessions(state.timerSessionCount || 0);
+          
+          if (state.isRunning && state.timerEndTime) {
+            const remaining = Math.max(Math.ceil((state.timerEndTime - Date.now()) / 1000), 0);
+            setTimeLeft(remaining);
+          } else {
+            const currentWorkTime = Number(localStorage.getItem("devsync-workTime")) || 25 * 60;
+            setTimeLeft(currentWorkTime);
+          }
         }
+      });
+    }
+  }, []); 
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.source !== window || !event.data || event.data.type !== "FROM_DEVSYNC_EXTENSION") {
+        return;
+      }
+      
+      const message = event.data.payload;
+      
+      if (message.action === "updateTime") {
+        setTimeLeft(message.timeLeft);
+      } 
+      else if (message.action === "startTimer") {
+        setIsRunning(true);
+        setSessionType(message.sessionType);
+        setSessions(message.sessionCount);
+        const remaining = Math.max(Math.ceil((message.endTime - Date.now()) / 1000), 0);
+        setTimeLeft(remaining);
+      }
+      else if (message.action === "stopTimer" || message.action === "hideTimer") {
+        setIsRunning(false);
+        setSessionType('work');
+        setSessions(0);
+        setWorkTime(currentWorkTime => {
+          setTimeLeft(currentWorkTime);
+          return currentWorkTime;
+        });
+        localStorage.removeItem("pomodoroTimeLeft");
       }
     };
+    
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []); 
 
-    if (isRunning) {
-      raf = requestAnimationFrame(tick);
-    }
-    return () => cancelAnimationFrame(raf);
-  }, [isRunning, endTimestamp]);
-
-  // --- Persist Timer Info to localStorage ---
-  useEffect(() => localStorage.setItem("pomodoroTimeLeft", timeLeft), [timeLeft]);
-  useEffect(() => localStorage.setItem("pomodoroSessions", sessions), [sessions]);
-  useEffect(() => {
-    if (endTimestamp) {
-      localStorage.setItem("pomodoroEndTimestamp", endTimestamp);
-    } else {
-      localStorage.removeItem("pomodoroEndTimestamp");
-    }
-  }, [endTimestamp]);
-
-  // --- Session End Logic ---
-  const handleSessionEnd = () => {
-    setIsRunning(false);
-    setEndTimestamp(null);
-
-    let nextSessionType;
-    let nextTime;
-
-    if (sessionType === 'work') {
-      sendStopFocusMessage();
-      const nextSessionNum = sessions + 1;
-      setSessions(nextSessionNum);
-
-      if (nextSessionNum % SESSIONS_BEFORE_LONG_BREAK === 0) {
-        nextSessionType = 'longBreak';
-        nextTime = longBreak;
-      } else {
-        nextSessionType = 'shortBreak';
-        nextTime = shortBreak;
-      }
-    } else {
-      nextSessionType = 'work';
-      nextTime = workTime;
-    }
-
-    setSessionType(nextSessionType);
-    setTimeLeft(nextTime);
-
-    // Notification
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(
-        sessionType === 'work' ? "Work session complete! Time for a break 🎉" : "Break over! Back to work 💻"
-      );
-    }
-  };
+  useEffect(() => localStorage.setItem("devsync-workTime", workTime), [workTime]);
+  useEffect(() => localStorage.setItem("devsync-shortBreak", shortBreak), [shortBreak]);
+  useEffect(() => localStorage.setItem("devsync-longBreak", longBreak), [longBreak]);
 
   const startTimer = () => {
-    setEndTimestamp(Date.now() + timeLeft * 1000);
     setIsRunning(true);
-
-    if (sessionType === 'work') {
-      sendStartFocusMessage(timeLeft);
-    }
+    
+    const savedTimeLeft = localStorage.getItem("pomodoroTimeLeft");
+    const timeToStart = savedTimeLeft ? Number(savedTimeLeft) : (timeLeft > 0 ? timeLeft : workTime);
+    localStorage.removeItem("pomodoroTimeLeft");
+    
+    sendStartTimerMessage({
+      timeLeft: timeToStart,
+      sessionType,
+      sessions,
+      workTime,
+      shortBreak,
+      longBreak
+    });
   };
 
   const pauseTimer = () => {
     setIsRunning(false);
-    localStorage.setItem("pomodoroTimeLeft", timeLeft);
-    setEndTimestamp(null);
-    sendStopFocusMessage();
+    sendStopTimerMessage();
+    localStorage.setItem("pomodoroTimeLeft", timeLeft); 
   };
 
   const resetTimer = () => {
     setIsRunning(false);
     setSessionType('work');
-    setTimeLeft(workTime);
+    setTimeLeft(workTime); 
     setSessions(0);
-    setEndTimestamp(null);
-    sendStopFocusMessage();
+    sendStopTimerMessage();
+    localStorage.removeItem("pomodoroTimeLeft");
   };
 
   const updateWorkTime = (minutes) => {
@@ -172,7 +168,6 @@ export function TimerProvider({ children }) {
     setWorkTime(secs);
     if (sessionType === 'work' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(null);
     }
   };
   const updateShortBreak = (minutes) => {
@@ -180,7 +175,6 @@ export function TimerProvider({ children }) {
     setShortBreak(secs);
     if (sessionType === 'shortBreak' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(null);
     }
   };
   const updateLongBreak = (minutes) => {
@@ -188,17 +182,14 @@ export function TimerProvider({ children }) {
     setLongBreak(secs);
     if (sessionType === 'longBreak' && !isRunning) {
       setTimeLeft(secs);
-      setEndTimestamp(null);
     }
   };
-
 
   useEffect(() => {
     if ("Notification" in window && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
-  
   
   const isWork = sessionType === 'work';
 

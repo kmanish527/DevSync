@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "DevSync Enforcer",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Companion extension for the DevSync Pomodoro app.",
   "permissions": [
     "tabs",
     "storage",
     "webNavigation",
-    "alarms"
+    "offscreen",
+    "alarms" 
   ],
   "background": {
     "service_worker": "background.js"
@@ -15,10 +16,33 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "timer.css"
+      ]
+    }
+  ],
   "externally_connectable": {
     "matches": [
       "*://localhost/*",
-      "*://your-devsync-domain.com/*"
+      "*://devsync-one.vercel.app/*"
     ]
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "alarm.mp3"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }
