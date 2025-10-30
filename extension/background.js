@@ -1,6 +1,6 @@
 const ALLOWED_DOMAINS = [
   'localhost',
-  'your-devsync-domain.com',
+  'devsync-one.vercel.app',
   'stackoverflow.com',
   'developer.mozilla.org',
   'github.com',
