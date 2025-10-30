@@ -1,70 +1,213 @@
 const ALLOWED_DOMAINS = [
-  'localhost',                
-  'your-devsync-domain.com',  
+  'localhost',
+  'your-devsync-domain.com',
   'stackoverflow.com',
   'developer.mozilla.org',
-
-  // --- Social Profiles ---
   'github.com',
   'gitlab.com',
   'linkedin.com',
-  
-  // --- Competitive Coding ---
   'leetcode.com',
   'codechef.com',
   'hackerrank.com',
   'codeforces.com',
   'hackerearth.com'
-  
-  // Add any other sites you need (e.G., 'vercel.app', 'aws.amazon.com')
 ];
 
+let creating; 
+async function setupOffscreenDocument(path) {
+  if (await chrome.offscreen.hasDocument()) return;
+  if (creating) {
+    await creating;
+  } else {
+    creating = chrome.offscreen.createDocument({
+      url: path,
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'To play alarm sound for Pomodoro timer',
+    });
+    await creating;
+    creating = null;
+  }
+}
 
-chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-  if (request.command === "startFocus") {
-    console.log(`Focus session starting for ${request.duration} minutes.`);
-    chrome.storage.local.set({ isFocusActive: true });
-    closeUnwantedTabs();
-    if (request.duration && request.duration > 0) {
-      chrome.alarms.create("stopFocus", { delayInMinutes: request.duration });
+async function playSound() {
+  await setupOffscreenDocument('offscreen.html');
+  await chrome.runtime.sendMessage({ action: "playSound" });
+}
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === "devsync-tick") {
+    
+    const data = await chrome.storage.local.get([
+      'timerEndTime', 'timerSessionType', 'timerSessionCount', 
+      'workTime', 'shortBreak', 'longBreak', 'SESSIONS_BEFORE_LONG_BREAK'
+    ]);
+    
+    if (!data.timerEndTime) {
+      stopTimerSession(false); 
+      return;
     }
     
-    sendResponse({ status: "Focus started" });
+    const now = Date.now();
+    const remaining = data.timerEndTime - now;
+    const timeLeftInSeconds = Math.ceil(remaining / 1000);
+    
+    if (timeLeftInSeconds > 0) {
+      broadcastToAllTabs({
+        action: "updateTime",
+        timeLeft: timeLeftInSeconds,
+      });
+      chrome.alarms.create("devsync-tick", { delayInMinutes: 1/60 }); 
+    } else {
+      handleSessionEnd(data);
+    }
+  }
+});
 
-  } else if (request.command === "stopFocus") {
-    console.log("Focus session stopping by user request.");
-    stopFocusSession();
-    sendResponse({ status: "Focus stopped" });
+
+function handleSessionEnd(data) {
+  playSound();
+  
+  let nextSessionType;
+  let nextTime;
+  let nextSessionCount = data.timerSessionCount;
+
+  if (data.timerSessionType === 'work') {
+    nextSessionCount = data.timerSessionCount + 1;
+    if (nextSessionCount % data.SESSIONS_BEFORE_LONG_BREAK === 0) {
+      nextSessionType = 'longBreak';
+      nextTime = data.longBreak;
+    } else {
+      nextSessionType = 'shortBreak';
+      nextTime = data.shortBreak;
+    }
+  } else {
+    if (data.timerSessionType === 'longBreak') {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon128.png', 
+        title: 'Cycle Complete!',
+        message: 'Great work! You finished all 4 sessions. Time for a well-deserved break.'
+      });
+      
+      stopTimerSession(true); 
+      return; 
+    } else {
+      nextSessionType = 'work';
+      nextTime = data.workTime;
+    }
+  }
+
+  const newEndTime = Date.now() + nextTime * 1000;
+  startTimer(newEndTime, nextSessionType, nextSessionCount, data.workTime, data.shortBreak, data.longBreak, data.SESSIONS_BEFORE_LONG_BREAK);
+}
+
+function startTimer(endTime, sessionType, sessionCount, workTime, shortBreak, longBreak, sessionsBeforeLongBreak) {
+  const isWorkSession = sessionType === 'work';
+
+  chrome.storage.local.set({ 
+    isRunning: true,
+    isFocusActive: isWorkSession, 
+    timerEndTime: endTime,
+    timerSessionType: sessionType,
+    timerSessionCount: sessionCount,
+    workTime: workTime,
+    shortBreak: shortBreak,
+    longBreak: longBreak,
+    SESSIONS_BEFORE_LONG_BREAK: sessionsBeforeLongBreak
+  }, () => {
+    
+    if (isWorkSession) {
+      closeUnwantedTabs();
+    }
+    
+    broadcastToAllTabs({ 
+      action: "startTimer", 
+      endTime: endTime,
+      sessionType: sessionType,
+      sessionCount: sessionCount
+    });
+    
+    chrome.alarms.create("devsync-tick", { delayInMinutes: 1/60 });
+  });
+}
+
+chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+  if (request.command === "startTimer") {
+    console.log("BG: Received startTimer from React");
+    startTimer(
+      request.endTime, 
+      request.sessionType, 
+      request.sessionCount,
+      request.settings.workTime,
+      request.settings.shortBreak,
+      request.settings.longBreak,
+      request.settings.SESSIONS_BEFORE_LONG_BREAK
+    );
+    sendResponse({ status: "Timer started" });
+    
+  } else if (request.command === "stopTimer") {
+    console.log("BG: Received stopTimer from React");
+    stopTimerSession(true); 
+    sendResponse({ status: "Timer stopped" });
+
+  } else if (request.command === "getState") {
+    console.log("BG: Received getState from React");
+    chrome.storage.local.get([
+      'isRunning', 'timerEndTime', 'timerSessionType', 'timerSessionCount'
+    ], (data) => {
+      sendResponse(data);
+    });
+    return true; 
   }
   return true; 
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "stopFocus") {
-    console.log("Alarm fired: Focus session stopping.");
-    stopFocusSession();
-  }
-});
+function stopTimerSession(broadcastUpdate) {
+  chrome.alarms.clear("devsync-tick");
 
-function stopFocusSession() {
-  chrome.storage.local.set({ isFocusActive: false });
-  chrome.alarms.clear("stopFocus");
-  console.log("Focus session deactivated. All sites unblocked.");
+  chrome.storage.local.set({ 
+    isRunning: false,
+    isFocusActive: false, 
+    timerEndTime: null,
+    timerSessionType: 'work', 
+    timerSessionCount: 0      
+  });
+  
+  if (broadcastUpdate) {
+    broadcastToAllTabs({ action: "stopTimer" });
+  }
+  
+  console.log("Timer session deactivated. All sites unblocked.");
+}
+
+function broadcastToAllTabs(message) {
+  chrome.tabs.query({}, (tabs) => {
+    for (let tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, message, (response) => {
+        if (chrome.runtime.lastError) {  }
+      });
+    }
+  });
 }
 
 function closeUnwantedTabs() {
   chrome.tabs.query({}, (tabs) => {
     for (let tab of tabs) {
       if (!tab.url) continue; 
-
       try {
         const url = new URL(tab.url);
-        const domain = url.hostname.replace('www.', '');
-        const isAllowed = ALLOWED_DOMAINS.some(allowedDomain => domain.endsWith(allowedDomain));
-
+        const domain = url.hostname; 
+        const isAllowed = ALLOWED_DOMAINS.some(allowedDomain => 
+          domain === allowedDomain || domain.endsWith('.' + allowedDomain)
+        );
         if (!isAllowed) {
           if (!tab.pinned && !tab.url.startsWith('chrome://')) {
-            chrome.tabs.remove(tab.id);
+            console.log(`DevSync: Closing distraction tab: ${tab.url}`);
+            chrome.tabs.remove(tab.id, () => {
+              if (chrome.runtime.lastError) {
+                console.warn(`DevSync: Error closing tab (ignoring): ${chrome.runtime.lastError.message}`);
+              }
+            });
           }
         }
       } catch (e) {
@@ -75,21 +218,23 @@ function closeUnwantedTabs() {
 }
 
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
-
   if (details.frameId !== 0) {
     return;
   }
-
   chrome.storage.local.get("isFocusActive", (data) => {
     if (data.isFocusActive) {
       const url = new URL(details.url);
-      const domain = url.hostname.replace('www.', '');
-
-      const isAllowed = ALLOWED_DOMAINS.some(allowedDomain => domain.endsWith(allowedDomain));
-
+      const domain = url.hostname;
+      const isAllowed = ALLOWED_DOMAINS.some(allowedDomain => 
+        domain === allowedDomain || domain.endsWith('.' + allowedDomain)
+      );
       if (!isAllowed && !details.url.startsWith('chrome://')) {
         console.log(`Blocking navigation to: ${details.url}`);
-        chrome.tabs.remove(details.tabId);
+        chrome.tabs.remove(details.tabId, () => {
+          if (chrome.runtime.lastError) {
+            console.warn(`DevSync: Error blocking navigation (ignoring): ${chrome.runtime.lastError.message}`);
+          }
+        });
       }
     }
   });
