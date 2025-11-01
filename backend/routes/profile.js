@@ -273,24 +273,6 @@ router.delete('/projects/:proj_id', auth, async (req, res) => {
 
 
 
-// @route   PUT api/profile/notes
-// @desc    Update user notes
-// @access  Private
-router.put('/notes', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    user.notes = req.body.notes || "";
-    await user.save();
-    res.json(user.notes);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
-
-
 // @route   PUT api/profile/time
 // @desc    Update time spent
 // @access  Private
@@ -312,7 +294,7 @@ router.put('/time', auth, async (req, res) => {
 
 
 
-router.post("/leetcode/:username", async (req, res) => {
+router.get("/leetcode/:username", async (req, res) => {
   const { username } = req.params;
 
   try {

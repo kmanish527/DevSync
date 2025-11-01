@@ -139,7 +139,7 @@ function App() {
         <Route path="/todo" element={<Todo />} />
         <Route path="/contributors" element={<AllContributors />} />
         <Route path="/dashboard/github/:username" element={<GitHubProfile />} />
-        <Route path="/leetcode/:leetUser" element={<LeetCode />} />
+        <Route path="/dashboard/leetcode/:leetUser" element={<LeetCode />} />
         <Route path="/feedback" element={<FeedbackReviewPage />} />
       
         <Route path='*' element={<NotFound/>}/>

@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { Button } from "@/Components/ui/button";
 import { MessageSquare } from "lucide-react";
 import { useFeedback } from "@/context/FeedbackContext";
+import TotalProblemsCard from "./DashBoard/NotesCard";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
@@ -54,7 +55,7 @@ export default function Dashboard() {
   };
   const [streak, setStreak] = useState(0);
 
-
+//for heatmap activity streak calculation
 useEffect(() => {
   if (profile?.activity?.length) {
     setStreak(calculateStreak(profile.activity));
@@ -63,9 +64,7 @@ useEffect(() => {
   }
 }, [profile?.activity]);
 
-
-
-
+// Handle OAuth token in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get("token");
@@ -229,7 +228,7 @@ const calculateStreak = (activityDates) => {
             {/* Row 2 */}
             <GoalsCard goals={goals} onGoalsChange={handleGoalsChange} />
             <TimeSpentCard time={timeSpent} onTimeUpdate={handleTimeUpdate} />
-            <NotesCard notes={notes} onNotesChange={handleNotesChange} />
+            <TotalProblemsCard profileData={profile} />
 
             {/* Row 3: Heatmap full width */}
             <div className="col-span-full">

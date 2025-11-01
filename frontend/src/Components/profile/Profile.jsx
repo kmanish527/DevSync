@@ -34,8 +34,28 @@ import BackButton from "../ui/backbutton";
 /**
  * A themed button for displaying social links in view mode.
  */
-const SocialButton = ({ icon, buttonUrl, buttonName, leetcodeUrl }) => {
+const SocialButton = ({ icon, buttonUrl, buttonName }) => {
   const isLinked = !!buttonUrl;
+  const navigate=useNavigate();
+   // 👇 list all platforms that should open inside your app dashboard
+  const internalPlatforms = ["leetcode", "Github", "Codechef", "Codeforces", "Hackerrank"];
+
+  
+  const handleClick = () => {
+    if (!buttonUrl) return;
+
+    const username = buttonUrl.split("/").filter(Boolean).pop();
+
+    if (internalPlatforms.includes(buttonName.toLowerCase())) {
+      // open in dashboard (internal route)
+      navigate(`/dashboard/${buttonName.toLowerCase()}/${username}`);
+    } else {
+      // external profiles like LinkedIn, portfolio website, etc.
+      window.open(buttonUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+
 
   return (
     <motion.button
@@ -46,15 +66,8 @@ const SocialButton = ({ icon, buttonUrl, buttonName, leetcodeUrl }) => {
           ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/30"
           : "bg-muted/50 text-muted-foreground cursor-not-allowed border border-border"
       } w-full`}
-      onClick={() => {
-        if (buttonUrl) {
-          const url =
-            buttonName === "Leetcode" ? leetcodeUrl(buttonUrl) : buttonUrl;
-          if (url) {
-            window.open(url, "_blank", "noopener,noreferrer");
-          }
-        }
-      }}
+      onClick={handleClick}
+        
       disabled={!buttonUrl}
     >
       <div
@@ -1009,19 +1022,19 @@ const Profile = () => {
                           icon={<SiGithub />}
                           buttonUrl={profileData.socialLinks?.github}
                           buttonName="GitHub"
-                          leetcodeUrl={getLeetcodeUrl}
+                         
                         />
                         <SocialButton
                           icon={<SiGitlab />}
                           buttonUrl={profileData.socialLinks?.gitlab}
                           buttonName="GitLab"
-                          leetcodeUrl={getLeetcodeUrl}
+                          
                         />
                         <SocialButton
                           icon={<SiLinkedin />}
                           buttonUrl={profileData.socialLinks?.linkedin}
                           buttonName="LinkedIn"
-                          leetcodeUrl={getLeetcodeUrl}
+                          
                         />
                       </div>
                     ) : (
@@ -1072,31 +1085,31 @@ const Profile = () => {
                           icon={<SiLeetcode />}
                           buttonUrl={profileData.socialLinks?.leetcode}
                           buttonName="Leetcode"
-                          leetcodeUrl={getLeetcodeUrl}
+                         
                         />
                         <SocialButton
                           icon={<SiCodechef />}
                           buttonUrl={profileData.socialLinks?.codechef}
                           buttonName="CodeChef"
-                          leetcodeUrl={getLeetcodeUrl}
+                          
                         />
                         <SocialButton
                           icon={<SiHackerrank />}
                           buttonUrl={profileData.socialLinks?.hackerrank}
                           buttonName="HackerRank"
-                          leetcodeUrl={getLeetcodeUrl}
+                          
                         />
                         <SocialButton
                           icon={<SiCodeforces />}
                           buttonUrl={profileData.socialLinks?.codeforces}
                           buttonName="Codeforces"
-                          leetcodeUrl={getLeetcodeUrl}
+                        
                         />
                         <SocialButton
                           icon={<SiHackerearth />}
                           buttonUrl={profileData.socialLinks?.hackerearth}
                           buttonName="HackerEarth"
-                          leetcodeUrl={getLeetcodeUrl}
+                   
                         />
                       </div>
                     ) : (

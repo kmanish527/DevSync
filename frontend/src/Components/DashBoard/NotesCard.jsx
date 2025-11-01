@@ -1,117 +1,127 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/Components/ui/Card";
 import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/Components/ui/select";
+import { Loader2, RefreshCw } from "lucide-react";
 
-export default function NotesCard({ notes = [], onNotesChange }) {
-  const [newNote, setNewNote] = useState("");
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editingValue, setEditingValue] = useState("");
+export default function TotalProblemsCard({ profileData }) {
+  const [platform, setPlatform] = useState("leetcode");
+  const [totalSolved, setTotalSolved] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const addNote = () => {
-    if (!newNote.trim()) return;
-    const updated = [...notes, newNote.trim()];
-    setNewNote("");
-    onNotesChange && onNotesChange(updated);
+  // ✅ Extract username from profile link
+  const getUsernameFromUrl = (url) => {
+    if (!url) return null;
+    const parts = url.replace(/\/+$/, "").split("/");
+    return parts[parts.length - 1];
   };
 
-  const startEditing = (i) => {
-    setEditingIndex(i);
-    setEditingValue(notes[i]);
+  const username = getUsernameFromUrl(profileData?.socialLinks?.[platform]);
+
+  const fetchProblems = async () => {
+    if (!username) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/profile/${platform}/${username}`
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      const total =
+        data?.data?.submitStatsGlobal?.find((s) => s.difficulty === "All")
+          ?.count || 0;
+      setTotalSolved(total);
+    } catch (err) {
+      console.error(err);
+      setTotalSolved(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const saveEdit = (i) => {
-    if (!editingValue.trim()) return;
-    const updated = [...notes];
-    updated[i] = editingValue.trim();
-    setEditingIndex(null);
-    setEditingValue("");
-    onNotesChange && onNotesChange(updated);
-  };
-
-  const removeNote = (i) => {
-    const updated = notes.filter((_, idx) => idx !== i);
-    onNotesChange && onNotesChange(updated);
-  };
+  useEffect(() => {
+    if (username) fetchProblems();
+  }, [platform]);
 
   return (
-    <Card className="p-4 sm:p-6 w-full sm:w-auto hover:shadow-lg transition-shadow duration-200">
-      <CardHeader>
-        <h3 className="font-semibold text-[var(--primary)]">Notes</h3>
+    <Card
+      className="p-5 sm:p-6 w-full sm:w-auto hover:shadow-lg transition-shadow duration-200 cursor-pointer select-none"
+    >
+      <CardHeader
+        className="cursor-pointer"
+      >
+        <h3 className="font-semibold text-[var(--primary)] cursor-pointer">
+          Total Problems Solved
+        </h3>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {notes.length > 0 ? (
-          <ul className="space-y-2 text-sm text-[var(--card-foreground)]">
-            {notes.map((note, i) => (
-              <li
-                key={i}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
-              >
-                {editingIndex === i ? (
-                  <>
-                    <Input
-                      type="text"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      autoFocus
-                      className="flex-1"
-                    />
-                    <div className="flex gap-2 mt-2 sm:mt-0">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => saveEdit(i)}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingIndex(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span
-                      className="cursor-pointer hover:underline flex-1"
-                      onClick={() => startEditing(i)}
-                    >
-                      {note}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => removeNote(i)}
-                    >
-                      ✕
-                    </Button>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-[var(--muted-foreground)] text-sm italic">
-            No notes yet.
-          </p>
-        )}
 
-        {/* Add new note */}
-        <div className="flex flex-col sm:flex-row gap-2 mt-3">
-          <Input
-            type="text"
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Add a new note..."
-            className="flex-1"
-          />
-          <Button onClick={addNote} className="sm:w-auto w-full">
-            Add
+      <CardContent className="flex flex-col gap-4 cursor-pointer">
+        <div className="flex flex-col sm:flex-row gap-2 items-center w-full cursor-pointer">
+          <Select value={platform} onValueChange={setPlatform}>
+            <SelectTrigger className="w-full sm:w-[200px] cursor-pointer">
+              <SelectValue placeholder="Select platform" />
+            </SelectTrigger>
+            <SelectContent className="cursor-pointer">
+              <SelectItem value="leetcode">LeetCode</SelectItem>
+              <SelectItem value="codeforces">Codeforces</SelectItem>
+              <SelectItem value="codechef">CodeChef</SelectItem>
+              <SelectItem value="hackerrank">HackerRank</SelectItem>
+              <SelectItem value="hackerearth">HackerEarth</SelectItem>
+              <SelectItem value="gfg">GeeksforGeeks</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex items-center gap-2 sm:w-auto w-full cursor-pointer"
+            onClick={fetchProblems}
+            disabled={isLoading || !username}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            {isLoading ? "Syncing..." : "Sync"}
           </Button>
         </div>
+
+        {username ? (
+          <div className="text-center mt-2 cursor-pointer">
+            {totalSolved !== null ? (
+              <>
+                <p className="text-sm text-[var(--muted-foreground)] mb-1">
+                  Synced from{" "}
+                  <span className="font-medium capitalize">{platform}</span>
+                </p>
+                <h1 className="text-3xl font-bold text-[var(--primary)]">
+                  {totalSolved}
+                </h1>
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  problems solved
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-[var(--muted-foreground)] italic">
+                {isLoading
+                  ? "Fetching data..."
+                  : "Click sync to fetch problem stats"}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-[var(--muted-foreground)] text-sm italic text-center cursor-pointer">
+            No {platform} username linked in your profile.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

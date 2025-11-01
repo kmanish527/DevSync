@@ -64,7 +64,7 @@ export default function LeetCode({ platforms = {} }) {
         const res = await fetch(
           `${import.meta.env.VITE_API_URL}/api/profile/leetcode/${leetUser}`,
           {
-            method: "POST",
+            method: "Get",
             headers: { "Content-Type": "application/json" },
           }
         );
