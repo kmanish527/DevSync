@@ -33,6 +33,7 @@ import FeedbackReviewPage from "./Components/feedback/FeedbackReviewPage";
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import NotFound from "./Components/ui/NotFound";
+import PopupTest from "./pages/Popuptest";
 
 function Home() {
   const [showTop, setShowTop] = useState(false);
@@ -142,6 +143,7 @@ function App() {
         <Route path="/dashboard/github/:username" element={<GitHubProfile />} />
         <Route path="/leetcode/:leetUser" element={<LeetCode />} />
         <Route path="/feedback" element={<FeedbackReviewPage />} />
+        <Route path="/popup-test" element={<PopupTest />} />
         <Route path='*' element={<NotFound/>}/>
       </Routes>
       <ToastContainer
