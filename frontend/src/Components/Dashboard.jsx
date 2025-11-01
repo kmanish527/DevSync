@@ -224,7 +224,7 @@ const calculateStreak = (activityDates) => {
             {/* Row 1 */}
             <ProfileCard user={profile} className="col-span-1" />
             <PlatformLinks platforms={socialLinks} className="col-span-1" />
-            <StreakCard streak={streak} className="col-span-1" />
+            <StreakCard streak={streak} activity={activity} className="col-span-1" />
 
             {/* Row 2 */}
             <GoalsCard goals={goals} onGoalsChange={handleGoalsChange} />
