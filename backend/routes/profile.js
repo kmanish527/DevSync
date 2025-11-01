@@ -276,18 +276,32 @@ router.delete('/projects/:proj_id', auth, async (req, res) => {
 // @route   PUT api/profile/time
 // @desc    Update time spent
 // @access  Private
-router.put('/time', auth, async (req, res) => {
+// PUT /time — update time spent
+router.put("/time", auth, async (req, res) => {
   try {
-    const { timeSpent } = req.body; // e.g. "2h 30m"
+    const { timeSpent } = req.body;
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (!user) return res.status(404).json({ msg: "User not found" });
 
     user.timeSpent = timeSpent;
     await user.save();
-    res.json(user.timeSpent);
+    res.json({ timeSpent: user.timeSpent });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
+  }
+});
+
+// GET /time — fetch current time spent
+router.get("/time", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("timeSpent");
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    res.json({ timeSpent: user.timeSpent || "0h 0m" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
 });
 

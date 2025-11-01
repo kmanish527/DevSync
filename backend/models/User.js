@@ -89,7 +89,7 @@ const UserSchema = new Schema({
   },
   timeSpent: {
     type: String,
-    default: "0 minutes"
+    default: "0h 0m",
   },
   activity: {
     type: [Object], // e.g. [{ date: '2025-08-27', count: 3 }]
