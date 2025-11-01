@@ -10,6 +10,11 @@ export default function StreakCard({ streak = 0, startDate = "2025-10-25" }) {
   const [longestStreak, setLongestStreak] = useState(0);
   const [period, setPeriod] = useState("");
 
+  const currentStartDate = "Oct 25";
+const currentEndDate = "Oct 27";
+const longestStartDate = "Sep 10";
+const longestEndDate = "Sep 18";
+
   useEffect(() => {
     const start = new Date(startDate);
     const end = new Date();
@@ -116,11 +121,6 @@ export default function StreakCard({ streak = 0, startDate = "2025-10-25" }) {
   )}
 </AnimatePresence>
 
-
-  
-
-
-
       {/* Main Streak Card */}
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -129,56 +129,75 @@ export default function StreakCard({ streak = 0, startDate = "2025-10-25" }) {
         whileHover={{ translateY: -4 }}
         className="w-full flex justify-center"
       >
-        <Card className="flex flex-col items-center justify-center p-4 sm:p-6 w-full sm:w-auto hover:shadow-lg transition-shadow duration-200">
-          <CardHeader className="flex flex-col items-center gap-3">
-            <motion.div
-              animate={
-                isActive
-                  ? { scale: [1, 1.08, 1], opacity: [1, 0.9, 1] }
-                  : {}
-              }
-              transition={{ duration: 1.3, repeat: isActive ? Infinity : 0 }}
-              className={`relative w-20 h-20 rounded-full flex items-center justify-center border-2 ${
-                isActive ? "border-orange-500" : "border-[var(--border)]"
-              }`}
-            >
-              <Flame
-                size={42}
-                className={`${
-                  isActive
-                    ? "text-orange-500 fill-orange-500"
-                    : "text-[var(--muted-foreground)] fill-transparent"
-                } transition-all duration-300`}
-              />
-            </motion.div>
+  <Card className="flex flex-col items-center justify-center p-4 sm:p-6 w-full sm:w-auto hover:shadow-lg transition-shadow duration-200">
+    <CardHeader className="flex flex-col items-center gap-3">
+      <motion.div
+  className="relative w-52 h-48 flex flex-col items-center justify-center"
+>
+  <div className="flex items-end justify-center w-full h-36">
+    {(() => {
+      // Heights in a diamond shape
+      const heights = [18, 26, 34, 42, 34, 26, 18];
+      const totalBars = heights.length;
+      return heights.map((h, i) => {
+        const isActive = i < Math.min(streak, totalBars);
+        return (
+          <motion.div
+            key={i}
+            initial={{ scaleY: 0.2, opacity: 0.3 }}
+            animate={{
+              scaleY: 1,
+              opacity: isActive ? 1 : 0.4,
+              background: isActive
+                ? "#f97316" // 
+                : "var(--muted-foreground)",
+              boxShadow: isActive
+                ? "0 0 10px rgba(251,146,60,0.7)"
+                : "none",
+            }}
+            transition={{ duration: 0.4, delay: i * 0.05 }}
+            className="w-6 mx-[8px] rounded-md origin-bottom"
+            style={{ height: `${h * 1.5}px` }}
+          />
+        );
+      });
+    })()}
+  </div>
 
-            <div className="flex flex-col items-center">
-              <span
-                className={`font-semibold text-lg ${
-                  isActive ? "text-orange-500" : "text-[var(--foreground)]"
-                }`}
-              >
-                {streak} Days
-              </span>
-              <p className="text-xs text-[var(--muted-foreground)]">
-                Current Streak
-              </p>
-            </div>
-          </CardHeader>
+  {/* 🔢 Streak number below the diamond */}
+  <span className="mt-4 text-orange-500 text-3xl font-semibold tracking-tight">
+    {streak}
+  </span>
+</motion.div>
 
-          <CardContent className="flex flex-col items-center text-center mt-2">
-            <p className="text-sm text-[var(--muted-foreground)]">
-              Period: <span className="text-[var(--foreground)]">{period}</span>
-            </p>
-            <p className="text-sm text-[var(--muted-foreground)]">
-              Longest Streak:{" "}
-              <span className="text-orange-500 font-medium">
-                {longestStreak} days
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-      </motion.div>
+
+    </CardHeader>
+
+    {/* 🧭 New summary section */}
+    <div className="w-full flex justify-between items-center mt-4 border-t pt-3 text-sm">
+      {/* Left: current streak */}
+      <div className="flex flex-col items-start">
+        <span className="text-[var(--foreground)] font-semibold">
+          Current Streak: {streak}
+        </span>
+        <span className="text-[var(--muted-foreground)] text-xs">
+          {currentStartDate} - {currentEndDate}
+        </span>
+      </div>
+
+      {/* Right: longest streak */}
+      <div className="flex flex-col items-end">
+        <span className="text-orange-500 font-semibold">
+          Longest Streak: {longestStreak}
+        </span>
+        <span className="text-[var(--muted-foreground)] text-xs">
+          {longestStartDate} - {longestEndDate}
+        </span>
+      </div>
+    </div>
+  </Card>
+</motion.div>
+
     </>
   );
 }
