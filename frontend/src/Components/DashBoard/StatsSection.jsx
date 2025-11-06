@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 import { Users, Star, GitFork, UsersRound } from "lucide-react";
 
 const StatsSection = () => {
@@ -29,21 +29,19 @@ const StatsSection = () => {
       .catch((err) => console.error("Error fetching stats:", err));
   }, []);
 
-  // ✅ Fixed & smooth counter
   const Counter = ({ value }) => {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
-      const duration = 1500; // ms
+      const duration = 1500;
       const startTime = performance.now();
 
       const animate = (currentTime) => {
         const progress = Math.min((currentTime - startTime) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+        const eased = 1 - Math.pow(1 - progress, 3);
         setCount(Math.floor(eased * value));
-
         if (progress < 1) requestAnimationFrame(animate);
-        else setCount(value); // ensure final exact value
+        else setCount(value);
       };
 
       requestAnimationFrame(animate);
@@ -59,7 +57,6 @@ const StatsSection = () => {
     { label: "Contributors", value: stats.contributors, icon: <UsersRound size={30} /> },
   ];
 
-  // 💙 Blue-dominant gradient
   const gradient = "from-blue-500 via-blue-600 to-fuchsia-500";
 
   const bgGlow = isDark
@@ -67,42 +64,44 @@ const StatsSection = () => {
     : "bg-[radial-gradient(circle_at_25%_30%,rgba(80,120,255,0.05),transparent_70%),radial-gradient(circle_at_80%_70%,rgba(255,100,255,0.04),transparent_70%)]";
 
   const shadowGlow = isDark
-    ? "shadow-[0_0_12px_rgba(80,120,255,0.25)]"
-    : "shadow-[0_0_10px_rgba(80,120,255,0.15)]";
+    ? "shadow-[0_0_12px_rgba(80,120,255,0.35)]"
+    : "shadow-[0_0_10px_rgba(80,120,255,0.25)]";
 
-  // ✨ Card reveal animation
   const cardVariants = {
-    hidden: { opacity: 0, y: 60, scale: 0.95 },
+    hidden: { opacity: 0, y: 80, scale: 0.9, rotateX: 8 },
     visible: (i) => ({
       opacity: 1,
       y: 0,
       scale: 1,
+      rotateX: 0,
       transition: {
-        delay: i * 0.2, // stagger reveal
-        duration: 0.9,
-        ease: [0.22, 1, 0.36, 1],
+        delay: i * 0.25,
+        duration: 1.2,
+        ease: [0.16, 1, 0.3, 1],
       },
     }),
   };
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 100, scale: 0.96 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 1.1, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 120, scale: 0.96, rotateX: 5 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+      transition={{
+        duration: 1.6,
+        ease: [0.16, 1, 0.3, 1],
+      }}
       viewport={{ once: true, amount: 0.2 }}
-      className="relative w-full min-h-[90vh] flex flex-col justify-center items-center 
-                 bg-[var(--background)] text-[var(--foreground)] overflow-hidden 
-                 rounded-3xl border border-[var(--border)]"
+      className={`relative w-full min-h-[90vh] flex flex-col justify-center items-center 
+                  bg-[var(--background)] text-[var(--foreground)] overflow-hidden 
+                  rounded-3xl border-2 ${shadowGlow}
+                  border-[rgba(80,120,255,0.3)] backdrop-blur-lg`}
     >
-      {/* Background glow */}
       <div className={`absolute inset-0 ${bgGlow} transition-all duration-700`} />
 
-      {/* Liquid gradient heading */}
       <motion.h1
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
+        transition={{ duration: 1.4, ease: "easeOut" }}
         viewport={{ once: true }}
         className={`text-5xl md:text-6xl font-extrabold tracking-wide mb-14
                     text-transparent bg-clip-text bg-gradient-to-r ${gradient}
@@ -111,11 +110,10 @@ const StatsSection = () => {
         Project Insights ⚡
       </motion.h1>
 
-      {/* Stats Grid */}
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        viewport={{ once: true, amount: 0.25 }}
         className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-14 w-[92%] max-w-6xl z-10"
       >
         {data.map((stat, index) => (
@@ -127,10 +125,10 @@ const StatsSection = () => {
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 180 }}
             className={`flex flex-col justify-center items-center rounded-2xl py-10 px-4
-                        border border-[var(--border)] bg-[var(--card)]
-                        cursor-pointer ${shadowGlow}
-                        hover:shadow-[0_0_20px_rgba(80,120,255,0.3)]
-                        transition-all duration-500 group relative`}
+                        border-2 border-[rgba(80,120,255,0.25)] bg-[var(--card)]
+                        cursor-pointer
+                        hover:shadow-[0_0_25px_rgba(80,120,255,0.4)]
+                        transition-all duration-700 group relative backdrop-blur-sm`}
           >
             <div
               className={`absolute inset-0 bg-gradient-to-br ${gradient}/10 
@@ -156,13 +154,11 @@ const StatsSection = () => {
         ))}
       </motion.div>
 
-      {/* Minimal sparkles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute w-48 h-48 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] blur-3xl animate-pulse top-[25%] left-[10%]" />
         <div className="absolute w-48 h-48 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] blur-3xl animate-pulse delay-700 bottom-[15%] right-[15%]" />
       </div>
 
-      {/* Liquid gradient keyframes */}
       <style>{`
         @keyframes liquidflow {
           0% { background-position: 0% 50%; }
